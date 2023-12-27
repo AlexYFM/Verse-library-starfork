@@ -7,6 +7,7 @@ import copy
 
 # from verse.map import Lane
 
+
 class BallMode(Enum):
     '''NOTE: Any model should have at least one mode
     The one mode of this automation is called "Normal" and auto assigns it an integer value.'''
