@@ -23,14 +23,19 @@ class StarSet:
 
         Parameters
         ----------
-        center : number
+        center : np array of numbers
             center of the starset.
-        basis : nparray of numbers
+        basis : nparray  of nparray of numbers
             basis of the starset
         predicate: boolean function
             function that gives the predicate
         """
+        self.n = len(center)
+        self.m = len(basis)
         self.center = center
+        for vec in basis:
+            if len(vec) != self.n:
+                raise Exception("Basis for star set must be the same dimension as center")
         self.basis = basis
         self.predicate = predicate
 
@@ -49,7 +54,16 @@ class StarSet:
         """
         if len(new_basis) == len(self.basis):
             return StarSet(new_center, new_basis, self.predicate)
-        raise Exception("Basis for star set must be the same dimension")
+        raise Exception("Basis for new star set must be the same")
+
+    def Post_cont(self, simulate, t):
+        new_center = simulate(self.center,t)
+        new_basis = np.empty_like(self.basis) 
+        for i in range(0, len(self.basis)):
+            vec = self.basis
+            new_x = simulate(np.add(self.center, vec), t)
+            new_basis[i] = np.subtract(new_x, new_center)
+        return superposition(self, new_center, new_basis)
 
 
     def show(self):
