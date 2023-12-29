@@ -56,14 +56,14 @@ class StarSet:
             return StarSet(new_center, new_basis, self.predicate)
         raise Exception("Basis for new star set must be the same")
 
-    def Post_cont(self, simulate, t):
+    def post_cont(self, simulate, t):
         new_center = simulate(self.center,t)
         new_basis = np.empty_like(self.basis) 
         for i in range(0, len(self.basis)):
-            vec = self.basis
+            vec = self.basis[i]
             new_x = simulate(np.add(self.center, vec), t)
             new_basis[i] = np.subtract(new_x, new_center)
-        return superposition(self, new_center, new_basis)
+        return self.superposition(new_center, new_basis)
 
 
     def show(self):
