@@ -1,5 +1,6 @@
 import numpy as np
 from starset import StarSet
+from starset import HalfSpace
 
 basis = np.array([[1, 0], [0, 1]])
 center = np.array([3,3])
@@ -7,7 +8,7 @@ center = np.array([3,3])
 def pred(alpha_vec):
     C = np.array([[1,-1,0,0],[0,0,1,-1]])
     g = np.array([1,1,1,1])
-    if np.less(np.multiply(C, alpha_vec),g):
+    if np.less_equal(np.multiply(C, alpha_vec),g):
         return True
     return False 
 
@@ -31,4 +32,11 @@ new_test.show()
 
 #new = new.superposition([2], [[5,6]])
 
+test_half = HalfSpace(np.array([1,1]), 2)
 
+#foo = np.array([3,3])
+#bar = 
+test_star = StarSet(np.array([3,3]), np.array([[0,5],[0,5]]), pred)
+
+result = test_star.intersection_halfspace(test_half)
+result.show()
