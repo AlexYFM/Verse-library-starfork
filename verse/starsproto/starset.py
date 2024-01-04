@@ -12,7 +12,7 @@ class StarSet:
     from_polytope
     intersection_halfspace
     intersection_poly
-    contains_points
+    contains_point
     satisfies
     is_empty
     """
@@ -85,8 +85,8 @@ class StarSet:
     '''
     def intersection_halfspace(self,hspace):
         def new_pred(alpha):
-            left = np.matmult(np.matmult(hspace.H, self.basis), alpha)
-            right = np.subtract(hspace.g, np.matmult(hspace.H, self.center))
+            left = np.matmul(np.matmul(hspace.H, self.basis), alpha)
+            right = np.subtract(hspace.g, np.matmul(hspace.H, self.center))
             return np.less(left, right)
         def conjunction_pred(alpha):
             return new_pred(alpha) and self.predicate(alpha)
@@ -97,8 +97,24 @@ class StarSet:
         return None
 
 
-    def contains_points():
-        return None
+    def contains_point_redo(self,pt):
+        if not (pt.ndim == 1) and not (len(pt) == self.n):
+            raise Exception("pt should be n dimensional vector")
+
+
+    def contains_point(self, pt):
+        if not (pt.ndim == 1) and not (len(pt) == self.n):
+            raise Exception("pt should be n dimensional vector")
+        #affine transformation of point with baisis as generator and cneter as offset
+        #then check if 
+        #print(self.basis)
+        intermediate = np.matmul(np.transpose(self.basis), pt) 
+        #print(intermediate)
+        p_prime = intermediate #np.add(intermediate,self.center)
+        #print("this is alpha!!!")
+        #print(p_prime)
+        return self.predicate(p_prime)
+
 
     '''
    returns true if entire star set is contained within the half_space
