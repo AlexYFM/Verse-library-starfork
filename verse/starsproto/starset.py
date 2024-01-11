@@ -1,5 +1,5 @@
 import numpy as np
-
+import copy
 
 class StarSet:
     """
@@ -21,7 +21,9 @@ class StarSet:
         self,
         center,
         basis,
-        predicate,
+        #predicate,
+        C,
+        g
     ):
         """
         
@@ -37,12 +39,17 @@ class StarSet:
         """
         self.n = len(center)
         self.m = len(basis)
-        self.center = center
+        self.center = np.copy(center)
         for vec in basis:
             if len(vec) != self.n:
                 raise Exception("Basis for star set must be the same dimension as center")
-        self.basis = basis
-        self.predicate = predicate
+        self.basis = np.copy(basis)
+        if C.shape[1] != self.m:
+            raise Exception("Width of C should be equal to " + str(m))
+        if len(g) !=  len(C):
+            raise Exception("Length of g vector should be equal length of C")
+        self.C = np.copy(C)
+        self.g = np.copy(g)
 
 
     def superposition(self, new_center, new_basis):
@@ -58,7 +65,7 @@ class StarSet:
             basis of the starset
         """
         if len(new_basis) == len(self.basis):
-            return StarSet(new_center, new_basis, self.predicate)
+            return StarSet(new_center, new_basis, self.C, self.g)
         raise Exception("Basis for new star set must be the same")
 
     '''
@@ -77,24 +84,33 @@ class StarSet:
     def show(self):
         print(self.center)
         print(self.basis)
-        print(self.predicate)
+        print(self.C)
+        print(self.g)
+
 
 
     '''
-    starset intsersection of this star set a halfspace
+    starset intsersection of this star set and a halfspace
     '''
-    def intersection_halfspace(self,hspace):
-        def new_pred(alpha):
-            left = np.matmul(np.matmul(hspace.H, self.basis), alpha)
-            right = np.subtract(hspace.g, np.matmul(hspace.H, self.center))
-            return np.less(left, right)
-        def conjunction_pred(alpha):
-            return new_pred(alpha) and self.predicate(alpha)
-        return StarSet(self.center, self.basis, conjunction_pred)
+    def intersection_halfspace(self,constraint_vec, rhs_val):
+        if not (constraint_vec.ndim == 1) or not (len(constraint_vec == self.n)):
+            raise Exception("constraint_vec should be of length n")
 
+        self.intersection_poly(np.array([constraint_vec]), np.array([rhs_val]))
 
-    def intersection_poly():
-        return None
+    def intersection_poly(self, constraint_mat, rhs):
+        #constraint mat should be length of n and heigh of j and rhs should have length of j
+        if not (len(constraint_mat[0] == self.n)):
+            raise Exception("constraint_mat vectors should be of length n")
+        if not (len(rhs) == len(constraint_mat)):
+            raise Exception("constraint_mat should be length of rhs")
+        new_c = np.matmul(constraint_mat, self.basis)
+        conj_c = np.vstack((self.C, new_c))
+        new_g = np.subtract(rhs, np.matmul(constraint_mat, self.center))
+        conj_g = np.append(self.g, new_g) 
+        self.C = conj_c 
+        self.g = conj_g 
+#        return None
 
 
     def contains_point_redo(self,pt):
@@ -110,23 +126,26 @@ class StarSet:
         #print(self.basis)
         intermediate = np.matmul(np.transpose(self.basis), pt) 
         #print(intermediate)
-        p_prime = intermediate #np.add(intermediate,self.center)
+        p_prime = np.add(intermediate,self.center)
         #print("this is alpha!!!")
         #print(p_prime)
-        return self.predicate(p_prime)
+        print(p_prime)
+        print(self.C)
+        return False #self.predicate(p_prime)
 
 
     '''
    returns true if entire star set is contained within the half_space
     '''
     def satisfies():
+        #union with the polytope and check if empty
         return None
 
-    '''
-   returns true if star set intersects the half space
-    '''
-    def intersects():
-        return None
+#    '''
+#   returns true if star set intersects the half space
+#    '''
+#    def intersects():
+#        return None
 
     def is_empty():
         return None
