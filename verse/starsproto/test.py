@@ -25,8 +25,20 @@ def sim(vec, t):
         vec = np.matmul(A, vec)
     return vec
 
+basis_rot = np.array([[0.707,0.707],[-0.707,0.707]])
+
 test = StarSet(center,basis, C, g)
+test.plot()
+
+
+test.is_empty()
 print("orig")
+test.show()
+
+print(test.satisfies(np.array([1,0]), -2))
+print(test.satisfies(np.array([1,0]), 10))
+
+print("test star set after")
 test.show()
 
 test.intersection_halfspace(np.array([5,5]), 3)
@@ -48,6 +60,23 @@ test.show()
 new_test = test.post_cont(sim, 1)
 new_test.show()
 
+
+print("from poly test")
+new_star = StarSet.from_poly(np.array([[8,8],[9,9]]), np.array([4,5]))
+new_star.show()
+
+
+#print("to poly test")
+polystar = StarSet(center, basis,C, g)
+#mat, rhs = polystar.to_poly()
+#print(mat)
+#print(rhs)
+#print(np.matmul(mat, [3,3]))
+
+#print(polystar.satisfies(np.array([[1,1]]),np.array([7])))
+
+#print("verts test")
+#print(StarSet.get_verts(polystar))
 
 #new = test.superposition([2], [[4]])
 #new.show()

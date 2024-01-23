@@ -1,5 +1,7 @@
 import numpy as np
 import copy
+from scipy.optimize import linprog
+import matplotlib.pyplot as plt
 
 class StarSet:
     """
@@ -87,7 +89,12 @@ class StarSet:
         print(self.C)
         print(self.g)
 
-
+    def get_halfspace_intersection(starset, constraint_vec, rhs_val):
+        #starset.show()
+        star_copy = StarSet(starset.center, starset.basis, starset.C, starset.g)
+        #star_copy.show()
+        star_copy.intersection_halfspace(constraint_vec, rhs_val)
+        return star_copy
 
     '''
     starset intsersection of this star set and a halfspace
@@ -95,7 +102,6 @@ class StarSet:
     def intersection_halfspace(self,constraint_vec, rhs_val):
         if not (constraint_vec.ndim == 1) or not (len(constraint_vec == self.n)):
             raise Exception("constraint_vec should be of length n")
-
         self.intersection_poly(np.array([constraint_vec]), np.array([rhs_val]))
 
     def intersection_poly(self, constraint_mat, rhs):
@@ -113,12 +119,10 @@ class StarSet:
 #        return None
 
 
-    def contains_point_redo(self,pt):
-        if not (pt.ndim == 1) and not (len(pt) == self.n):
-            raise Exception("pt should be n dimensional vector")
 
 
     def contains_point(self, pt):
+        raise Exception("not implemented")
         if not (pt.ndim == 1) and not (len(pt) == self.n):
             raise Exception("pt should be n dimensional vector")
         #affine transformation of point with baisis as generator and cneter as offset
@@ -133,13 +137,94 @@ class StarSet:
         print(self.C)
         return False #self.predicate(p_prime)
 
+    def from_poly(constraint_mat, rhs):
+        if not (len(rhs) == len(constraint_mat)):
+            raise Exception("constraint_mat should be length of rhs")
+        n = len(constraint_mat[0])
+        center = np.zeros(n)
+        basis = np.zeros((n, n))
+        for index in range(0,n):
+            basis[index][index] = 1.0
+        return StarSet(center,basis, constraint_mat, rhs)
+
+    def to_poly(self):
+        raise Exception("to_poly not implemented")
+        #new_constraint_mat =np.matmul(self.C,np.linalg.inv(self.basis)) - self.center
+        #new_rhs = self.g
+        new_constraint_mat =np.matmul(self.C,self.basis) + self.center
+        new_rhs = self.g
+
+        return (new_constraint_mat, new_rhs)
 
     '''
-   returns true if entire star set is contained within the half_space
+   returns true if entire star set is contained within the half_space A*x <= b
     '''
-    def satisfies():
-        #union with the polytope and check if empty
+    def satisfies(self,constraint_vec, rhs):
+        #check if the intersection Ax > b is emtpy. We can only check <= in scipy
+        #TODO: improve to find check -Ax < -b instead of -Ax <= -b
+        new_star = StarSet.get_halfspace_intersection(self, -1 * constraint_vec,-1*rhs)
+        #new_star.show()
+        #if new star is empty, this star is entirely contained in input halfspace
+        return new_star.is_empty()
+
+    def union():
         return None
+
+    def intersect(star1, star2):
+        return None
+
+    def plot(self):
+        xs, ys = StarSet.get_verts(self)
+        #print(verts)
+        plt.plot(xs, ys)
+        plt.show()
+
+    #stanley bak code
+    def get_verts(stateset):
+        """get the vertices of the stateset"""
+
+        verts = []
+        x_pts = []
+        y_pts = []
+        # sample the angles from 0 to 2pi, 100 samples
+        for angle in np.linspace(0, 2*np.pi, 100):
+            x_component = np.cos(angle)
+            y_component = np.sin(angle)
+            direction = np.array([[x_component], [y_component]])
+
+            pt = stateset.maximize(direction)
+
+            verts.append(pt)
+            #print(pt)
+            x_pts.append(pt[0][0])
+            print(pt[0][0])
+            y_pts.append(pt[1][0])
+            print(pt[1][0])
+        return (x_pts, y_pts)
+
+#stanley bak code
+    def maximize(self, opt_direction):
+        """return the point that maximizes the direction"""
+
+        opt_direction *= -1
+
+        # convert opt_direction to domain
+        domain_direction = opt_direction.T @ self.basis
+
+        # use LP to optimize the constraints
+        res = linprog(c=domain_direction, 
+                A_ub=self.C, 
+                b_ub=self.g, 
+                bounds=(None, None))
+        
+        # convert point back to range
+        #print(res.x)
+        domain_pt = res.x.reshape((res.x.shape[0], 1))
+        range_pt = self.center + self.basis @ domain_pt
+        
+        # return the point
+        return range_pt
+
 
 #    '''
 #   returns true if star set intersects the half space
@@ -147,8 +232,19 @@ class StarSet:
 #    def intersects():
 #        return None
 
-    def is_empty():
-        return None
+    def is_empty(self):
+        feasible = StarSet.is_feasible(self.n,self.C,self.g)
+        if feasible:
+            return False
+        return True
+
+    def is_feasible(n, constraint_mat, rhs, equal_mat=None, equal_rhs=None):
+        results = linprog(c=np.zeros(n),A_ub=constraint_mat,b_ub=rhs,A_eq=equal_mat, b_eq=equal_rhs)
+        if results.status == 0:
+            return True
+        if results.status == 2:
+            return False
+        raise Exception("linear program had unexpected result")
 
 
 class HalfSpace:
