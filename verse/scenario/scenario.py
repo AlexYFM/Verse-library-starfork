@@ -22,7 +22,7 @@ def _check_ray_init(parallel: bool) -> None:
             ray.init()
 
 
-@dataclass(frozen=True)
+@dataclass()
 class ScenarioConfig:
     """Configuration for how simulation/verification is performed for a scenario. Properties are
     immutable so that incremental verification works correctly."""
@@ -214,6 +214,7 @@ class Scenario:
             `seed`: the random seed for sampling a point in the region specified by the initial
             conditions
         '''
+       #TODO: confirm we can simulate with starsets
         _check_ray_init(self.config.parallel)
         self._get_init_from_agent()
         self._check_init()
@@ -249,6 +250,7 @@ class Scenario:
             `seed`: the random seed for sampling a point in the region specified by the initial
             conditions
         '''
+       #TDOO: check we can sim with starsets
         self._get_init_from_agent()
         self._check_init()
         root = AnalysisTreeNode.root_from_inits(
@@ -278,6 +280,7 @@ class Scenario:
 
     def verify(self, time_horizon, time_step, max_height=None, params={}) -> AnalysisTree:
         '''Compute the set of reachable states, starting from a set of initial states states.'''
+        print("in verify")
         _check_ray_init(self.config.parallel)
         self._check_init()
         root = AnalysisTreeNode.root_from_inits(

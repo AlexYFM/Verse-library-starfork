@@ -37,7 +37,7 @@ class ReachabilityMethod(Enum):
     MIXMONO_CONT = auto()
     MIXMONO_DISC = auto()
     DRYVR_DISC = auto()
-
+    STAR_SETS = auto()
 
 @dataclass
 class ReachConsts:
@@ -214,6 +214,7 @@ class Verifier:
         params={},
     ) -> Tuple[int, int, List[AnalysisTreeNode], Dict[str, TraceType], list]:
         # t = timeit.default_timer()
+        print("compute_full_reachtube_step")
         if config.print_level >= 1:
             print("=============================================================")
             print(f"node {node.id} start: {node.start_time}")
@@ -232,7 +233,9 @@ class Verifier:
             if agent_id not in node.trace:
                 # Compute the trace starting from initial condition
                 uncertain_param = node.uncertain_param[agent_id]
-                if consts.reachability_method == ReachabilityMethod.DRYVR:
+                if consts.reachability_method == ReachabilityMethod.STAR_SETS:
+                    print("in star sets")
+                elif consts.reachability_method == ReachabilityMethod.DRYVR:
                     # pp(('tube', agent_id, mode, inits))
                     (
                         cur_bloated_tube,
