@@ -118,6 +118,8 @@ class Verifier:
                 res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
                     res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
                 )
+        print(res_tube)
+        print(missing_seg_idx_list)
         return res_tube, missing_seg_idx_list
 
     @staticmethod
@@ -198,7 +200,152 @@ class Verifier:
                 res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
                     res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
                 )
+        print(res_tube.tolist())
+        print(cache_tube_updates)
         return res_tube.tolist(), cache_tube_updates
+
+    def check_cache_bloated_tube_stars(
+        self,
+        agent_id,
+        mode_label,
+        initial_set,
+        combine_seg_length=1000,
+    ):
+        """
+        Check the bloated tubes cached already
+
+        :param TBA
+        :return:    the combined bloated tube with all cached tube segs
+                    a list of indexs of missing segs
+        """
+        print("in stars check cache")
+        missing_seg_idx_list = []
+        res_tube = None
+        tube_length = 0
+        for combine_seg_idx in range(0, len(initial_set), combine_seg_length):
+            rect_seg = initial_set[combine_seg_idx : combine_seg_idx + combine_seg_length]
+            combined_rect = None
+            for rect in rect_seg:
+                rect = np.array(rect)
+                if combined_rect is None:
+                    combined_rect = rect
+                else:
+                    combined_rect[0, :] = np.minimum(combined_rect[0, :], rect[0, :])
+                    combined_rect[1, :] = np.maximum(combined_rect[1, :], rect[1, :])
+            combined_rect = combined_rect.tolist()
+            if self.config.incremental:
+                cached = self.cache.check_hit(agent_id, mode_label, combined_rect)
+                if cached != None:
+                    self.tube_cache_hits = self.tube_cache_hits[0] + 1, self.tube_cache_hits[1]
+                    # print('cache', agent_id, time_horizon, self.tube_cache_hits )
+                else:
+                    self.tube_cache_hits = self.tube_cache_hits[0], self.tube_cache_hits[1] + 1
+                    # print('noncache', agent_id, time_horizon, self.tube_cache_hits )
+            else:
+                cached = None
+            if cached != None:
+                cur_bloated_tube = cached.tube
+            else:
+                missing_seg_idx_list.append(combine_seg_idx)
+                continue
+            # FIXME
+            if res_tube is None:
+                res_tube = cur_bloated_tube
+                tube_length = cur_bloated_tube.shape[0]
+            else:
+                cur_bloated_tube = cur_bloated_tube[: tube_length - combine_seg_idx * 2, :]
+                # Handle Lower Bound
+                res_tube[combine_seg_idx * 2 :: 2, 1:] = np.minimum(
+                    res_tube[combine_seg_idx * 2 :: 2, 1:], cur_bloated_tube[::2, 1:]
+                )
+                # Handle Upper Bound
+                res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
+                    res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
+                )
+        return res_tube, missing_seg_idx_list
+
+    @staticmethod
+    def calculate_full_bloated_tube_stars(
+        agent_id,
+        cached_tube_info,
+        incremental,
+        mode_label,
+        initial_set,
+        time_horizon,
+        time_step,
+        sim_func,
+        params,
+        kvalue,
+        sim_trace_num,
+        combine_seg_length=1000,
+        guard_checker=None,
+        guard_str="",
+        lane_map=None,
+    ):
+        """
+        Get the full bloated tube. use cached tubes, calculate noncached tubes
+
+        :param TBA
+        :return:    the full bloated tube
+                    cache to be updated
+        """
+        print("in stars calculate full bloated tube")
+        # Handle Parameters
+        bloating_method = "PW"
+        if "bloating_method" in params:
+            bloating_method = params["bloating_method"]
+        cache_tube_updates = []
+        if incremental:
+            cached_tube, missing_seg_idx_list = cached_tube_info
+        else:
+            cached_tube, missing_seg_idx_list = None, range(0, len(initial_set), combine_seg_length)
+        res_tube = cached_tube
+        if res_tube is None:
+            tube_length = 0
+        else:
+            tube_length = res_tube.shape[0]
+        for combine_seg_idx in missing_seg_idx_list:
+            rect_seg = initial_set[combine_seg_idx : combine_seg_idx + combine_seg_length]
+            combined_rect = None
+            for rect in rect_seg:
+                rect = np.array(rect)
+                if combined_rect is None:
+                    combined_rect = rect
+                else:
+                    combined_rect[0, :] = np.minimum(combined_rect[0, :], rect[0, :])
+                    combined_rect[1, :] = np.maximum(combined_rect[1, :], rect[1, :])
+            combined_rect = combined_rect.tolist()
+            cur_bloated_tube = calc_bloated_tube(
+                mode_label,
+                combined_rect,
+                time_horizon,
+                time_step,
+                sim_func,
+                bloating_method,
+                kvalue,
+                sim_trace_num,
+                lane_map=lane_map,
+            )
+            if incremental:
+                cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))
+            if res_tube is None:
+                res_tube = cur_bloated_tube
+                tube_length = cur_bloated_tube.shape[0]
+            else:
+                if tube_length <= 2 * combine_seg_idx:
+                    break
+                cur_bloated_tube = cur_bloated_tube[: tube_length - combine_seg_idx * 2, :]
+                # Handle Lower Bound
+                res_tube[combine_seg_idx * 2 :: 2, 1:] = np.minimum(
+                    res_tube[combine_seg_idx * 2 :: 2, 1:], cur_bloated_tube[::2, 1:]
+                )
+                # Handle Upper Bound
+                res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
+                    res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
+                )
+        return res_tube.tolist(), cache_tube_updates
+
+
 
     @staticmethod
     def compute_full_reachtube_step(
@@ -233,9 +380,10 @@ class Verifier:
             if agent_id not in node.trace:
                 # Compute the trace starting from initial condition
                 uncertain_param = node.uncertain_param[agent_id]
-                if consts.reachability_method == ReachabilityMethod.STAR_SETS:
-                    print("in star sets")
-                elif consts.reachability_method == ReachabilityMethod.DRYVR:
+                #if consts.reachability_method == ReachabilityMethod.STAR_SETS:
+                #    print("in star sets")
+                print(consts.reachability_method)
+                if consts.reachability_method == ReachabilityMethod.DRYVR:
                     # pp(('tube', agent_id, mode, inits))
                     (
                         cur_bloated_tube,
@@ -257,6 +405,29 @@ class Verifier:
                     )
                     if config.incremental:
                         cache_tube_updates.extend(cache_tube_update)
+                elif consts.reachability_method == ReachabilityMethod.STAR_SETS:
+                    # pp(('tube', agent_id, mode, inits))
+                    (
+                        cur_bloated_tube,
+                        cache_tube_update,
+                    ) = Verifier.calculate_full_bloated_tube_stars(
+                        agent_id,
+                        cached_tubes[agent_id] if config.incremental else None,
+                        config.incremental,
+                        mode,
+                        inits,
+                        remain_time,
+                        consts.time_step,
+                        node.agent[agent_id].TC_simulate,
+                        params,
+                        100,
+                        SIMTRACENUM,
+                        combine_seg_length=consts.init_seg_length,
+                        lane_map=consts.lane_map,
+                    )
+                    if config.incremental:
+                        cache_tube_updates.extend(cache_tube_update)
+
                 elif consts.reachability_method == ReachabilityMethod.DRYVR_DISC:
                     from verse.analysis.dryvr_disc import calc_bloated_tube_dryvr
                     bloating_method = 'PW'
@@ -575,7 +746,13 @@ class Verifier:
                 for agent_id in node.agent:
                     mode = node.mode[agent_id]
                     inits = node.init[agent_id]
-                    combined = combine_all(inits)
+                    #print('new agent inits')
+                    #print(inits)
+                    combined = inits
+                    if reachability_method != ReachabilityMethod.STAR_SETS:
+                        combined = combine_all(inits)
+                    #print('combined')
+                    #print(combined)
                     if self.config.incremental:
                         # CachedRTTrans
                         cached = self.trans_cache.check_hit(agent_id, mode, combined, node.init)
@@ -592,14 +769,27 @@ class Verifier:
                         # pp(("check hit", agent_id, mode, combined))
                         if cached != None:
                             cached_trans_tubes[agent_id] = cached
+                        # if incremental and stars, check cache tube first
+                        if agent_id not in node.trace and reachability_method == ReachabilityMethod.STAR_SETS:
+                            print("in check bloat tube")
+                            # uncertain_param = node.uncertain_param[agent_id]
+                            # CachedTube.tube
+                            cur_bloated_tube, miss_seg_idx_list = self.check_cache_bloated_tube_stars(
+                                agent_id, mode, inits, combine_seg_length=init_seg_length
+                            )
+                            cached_tubes[agent_id] = (cur_bloated_tube, miss_seg_idx_list)
+                            print("done")
+
                         # if incremental and DRYVR, check cache tube first
-                        if agent_id not in node.trace and reachability_method == "DRYVR":
+                        elif agent_id not in node.trace and reachability_method == "DRYVR":
+                            print("in check bloat tube")
                             # uncertain_param = node.uncertain_param[agent_id]
                             # CachedTube.tube
                             cur_bloated_tube, miss_seg_idx_list = self.check_cache_bloated_tube(
                                 agent_id, mode, inits, combine_seg_length=init_seg_length
                             )
                             cached_tubes[agent_id] = (cur_bloated_tube, miss_seg_idx_list)
+                            print("done")
                 # FIXME
                 old_node_id = None
                 if len(cached_trans_tubes) == len(node.agent):
