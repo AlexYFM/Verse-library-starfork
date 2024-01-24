@@ -2,6 +2,7 @@ import numpy as np
 import copy
 from scipy.optimize import linprog
 import matplotlib.pyplot as plt
+import polytope as pc
 
 class StarSet:
     """
@@ -136,6 +137,9 @@ class StarSet:
         print(p_prime)
         print(self.C)
         return False #self.predicate(p_prime)
+    def from_polytope(polytope):
+        return StarSet.from_poly(polytope.A, polytope.b)
+
 
     def from_poly(constraint_mat, rhs):
         if not (len(rhs) == len(constraint_mat)):

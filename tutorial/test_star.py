@@ -1,5 +1,7 @@
 from verse.map.lane_segment import StraightLane
 from verse.map.lane import Lane
+from verse.starsproto.starset import StarSet
+import polytope as pc
 
 segment0 = StraightLane("seg0", [0, 0], [500, 0], 3)
 lane0 = Lane("T0", [segment0])
@@ -59,10 +61,12 @@ from tutorial_agent import CarAgent
 
 car1 = CarAgent("car1", file_name="./dl_sec5.py")
 #TODO: make star sets
-car1.set_initial([[0, -0.5, 0, 2], [0.5, 0.5, 0, 2]], (AgentMode.Normal, TrackMode.T0))
+initial_set_polytope = pc.box2poly([[0,0.5], [-0.5,0.5], [0,0], [2,2]])
+#initial_set_car1 = StarSet.from_polytope(
+car1.set_initial(StarSet.from_polytope(initial_set_polytope), (AgentMode.Normal, TrackMode.T0))
 car2 = CarAgent("car2", file_name="./dl_sec5.py")
 #TODO: make star sets
-car2.set_initial([[20, -0.5, 0, 1], [20.5, 0.5, 0, 1]], (AgentMode.Normal, TrackMode.T0))
+car2.set_initial(StarSet.from_polytope(initial_set_polytope), (AgentMode.Normal, TrackMode.T0))
 scenario.add_agent(car1)
 scenario.add_agent(car2)
 
