@@ -118,8 +118,8 @@ class Verifier:
                 res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
                     res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
                 )
-        print(res_tube)
-        print(missing_seg_idx_list)
+        #print(res_tube)
+        #print(missing_seg_idx_list)
         return res_tube, missing_seg_idx_list
 
     @staticmethod
@@ -200,8 +200,8 @@ class Verifier:
                 res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
                     res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
                 )
-        print(res_tube.tolist())
-        print(cache_tube_updates)
+        #print(res_tube.tolist()) #list of all the reachable states?
+        print(cache_tube_updates) #this this just a copy of the cache?
         return res_tube.tolist(), cache_tube_updates
 
     def check_cache_bloated_tube_stars(
@@ -325,13 +325,14 @@ class Verifier:
                 kvalue,
                 sim_trace_num,
                 lane_map=lane_map,
-            )
+            ) #change this
+            #run simulation the time horizon number of times, check if we violate a guard, somewhere we handle resets?
             if incremental:
                 cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))
             if res_tube is None:
                 res_tube = cur_bloated_tube
                 tube_length = cur_bloated_tube.shape[0]
-            else:
+            else: #figure out what to do with this
                 if tube_length <= 2 * combine_seg_idx:
                     break
                 cur_bloated_tube = cur_bloated_tube[: tube_length - combine_seg_idx * 2, :]
