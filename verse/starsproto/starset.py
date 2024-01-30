@@ -70,13 +70,37 @@ class StarSet:
         if len(new_basis) == len(self.basis):
             return StarSet(new_center, new_basis, self.C, self.g)
         raise Exception("Basis for new star set must be the same")
+    
+
+    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,lane_map):
+        reach_tubes = []
+        sim_results = sim_func(mode_label, self.center, time_horizon, time_step, lane_map)
+        new_centers = sim_results[:,1:] #slice off the time
+        times = sim_results[:,0] #get the 0th index from all the results
+        print(self.center)
+        print(new_centers[0])
+        print("examine centers")
+        new_basises = []
+        #new_basises = np.expand_dims(new_basises, axis=(2) ) #add a 3rd dimension to the basis to hold each step
+        for i in range(0, len(self.basis)):
+            vec = self.basis[i]
+            new_x = sim_func(mode_label, np.add(self.center, vec), time_horizon, time_step, lane_map)[:,1:]
+            new_basises.append([])
+            for j in range(0, len(new_x)):
+                new_basises[i].append(np.subtract(new_x[j], new_centers[j]))
+        for i in range(0, len(new_centers)):
+            basis = []
+            for basis_list in new_basises:
+                basis.append(basis_list[i])
+            reach_tubes.append([times[i], self.superposition(new_centers[i], basis)])
+        return reach_tubes
 
     '''
    prototype function for now. Will likley need more args to properly run simulation
     '''
     def post_cont(self, simulate, t):
         new_center = simulate(self.center,t)
-        new_basis = np.empty_like(self.basis) 
+        new_basis = np.empty_like(self.basis)
         for i in range(0, len(self.basis)):
             vec = self.basis[i]
             new_x = simulate(np.add(self.center, vec), t)

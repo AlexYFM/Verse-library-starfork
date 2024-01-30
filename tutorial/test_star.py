@@ -51,22 +51,22 @@ class TrackMode(Enum):
     M10 = auto()
 
 
-from verse.scenario import Scenario
+from verse.scenario import Scenario, ScenarioConfig
 from verse.analysis import ReachabilityMethod
 
-scenario = Scenario()
+scenario = Scenario(ScenarioConfig(parallel=False))
+#scenario = Scenario()
+
 scenario.set_map(Map2Lanes())
 
 from tutorial_agent import CarAgent
 
 car1 = CarAgent("car1", file_name="./dl_sec5.py")
-#TODO: make star sets
 initial_set_polytope = pc.box2poly([[0,0.5], [-0.5,0.5], [0,0], [2,2]])
-#initial_set_car1 = StarSet.from_polytope(
 car1.set_initial(StarSet.from_polytope(initial_set_polytope), (AgentMode.Normal, TrackMode.T0))
 car2 = CarAgent("car2", file_name="./dl_sec5.py")
-#TODO: make star sets
-car2.set_initial(StarSet.from_polytope(initial_set_polytope), (AgentMode.Normal, TrackMode.T0))
+initial_set_polytope_car2 = pc.box2poly([[0,0.4], [-0.4,0.4], [0,0], [1,1]])
+car2.set_initial(StarSet.from_polytope(initial_set_polytope_car2), (AgentMode.Normal, TrackMode.T0))
 scenario.add_agent(car1)
 scenario.add_agent(car2)
 
