@@ -78,7 +78,7 @@ class GuardExpressionAst:
         self.varDict = {}
         self.guard_idx = guard_idx
 
-    def _build_guard(self, guard_str, agent):
+    def _build_guard(self, guard_str, agent, stars = True):
         """
         Build solver for current guard based on guard string
 
@@ -101,41 +101,70 @@ class GuardExpressionAst:
         for vars in reversed(self.cont_variables):
             guard_str = guard_str.replace(vars, self.cont_variables[vars])
         # XXX `locals` should override `globals` right?
-        cur_solver.add(
-            eval(guard_str, globals(), self.varDict)
-        )  # TODO use an object instead of `eval` a string
+        if stars:
+            print(guard_str)
+            #print(globals())
+            print(self.varDict)
+            print(self.cont_variables)
+            cur_solver.add(
+                eval_star(guard_str, globals(), self.varDict)
+            )  # TODO use an object instead of `eval` a string
+        else:
+            print(guard_str)
+            print("look here!!")
+            #print(globals())
+            print(self.varDict)
+            print(self.cont_variables)
+            cur_solver.add(
+                eval(guard_str, globals(), self.varDict)
+            )  # TODO use an object instead of `eval` a string
         return cur_solver, symbols_map
-
-    def evaluate_guard_cont(self, agent, continuous_variable_dict, track_map):
+    
+    def eval_star(guard_str, globals, varDict):
+        return False
+    
+    def evaluate_guard_cont(self, agent, continuous_variable_dict, track_map, stars=True):
         res = False
         is_contained = False
-
+        print("evaluating guard")
+        print(continuous_variable_dict)
+        #print(self)
         for cont_vars in continuous_variable_dict:
             underscored = cont_vars.replace(".", "_")
             self.cont_variables[cont_vars] = underscored
             self.varDict[underscored] = Real(underscored)
+        print(self.varDict)
+        if stars:
+            #evaluates if its possible to satisfy this
+            z3_string = self.generate_z3_expression()
+            print("z3 done")
+            print(z3_string)
+            if isinstance(z3_string, bool):
+                return z3_string, z3_string
 
-        z3_string = self.generate_z3_expression()
-        if isinstance(z3_string, bool):
-            return z3_string, z3_string
-
-        cur_solver, symbols = self._build_guard(z3_string, agent)
-        cur_solver.push()
-        for symbol in symbols:
-            start, end = continuous_variable_dict[symbols[symbol]]
-            cur_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
-        if cur_solver.check() == sat:
-            # The reachtube hits the guard
-            cur_solver.pop()
-            res = True
-
-            tmp_solver = Solver()
-            tmp_solver.add(Not(cur_solver.assertions()[0]))
+            cur_solver, symbols = self._build_guard(z3_string, agent)
+            cur_solver.push()
             for symbol in symbols:
                 start, end = continuous_variable_dict[symbols[symbol]]
-                tmp_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
-            if tmp_solver.check() == unsat:
-                is_contained = True
+                cur_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
+            if cur_solver.check() == sat:
+                # The reachtube hits the guard
+                cur_solver.pop()
+                res = True
+
+                tmp_solver = Solver()
+                tmp_solver.add(Not(cur_solver.assertions()[0]))
+                for symbol in symbols:
+                    start, end = continuous_variable_dict[symbols[symbol]]
+                    tmp_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
+                if tmp_solver.check() == unsat:
+                    is_contained = True
+        else:
+            print("foo")
+            #evaluate each bit with the half spaces and then check if equation of bools is sat is z3?
+            
+            #HERE We need to get a half space for each part of guard and check if each satisfies
+
 
         return res, is_contained
 
@@ -166,6 +195,7 @@ class GuardExpressionAst:
         elif len(res) == 1:
             return res[0]
         res = "And(" + ",".join(res) + ")"
+        print(res)
         return res
 
     def _generate_z3_expression_node(self, node) -> Any:

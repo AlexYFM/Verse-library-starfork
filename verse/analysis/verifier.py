@@ -898,7 +898,6 @@ class Verifier:
 		Optional[Dict[str, List[str]]],
 		Optional[Dict[str, List[Tuple[str, List[str], List[float]]]]],
 	]:
-		#TODO: work here
 		# For each agent
 		agent_guard_dict = defaultdict(list)
 		cached_guards = defaultdict(list)
@@ -1322,18 +1321,22 @@ class Verifier:
 
 
 def combine_rect(trace):
-	"""
-	Combine a reachtube into one rect
+	#TODO: use a union function
+	rects = False
+	if rects:
+		"""
+		Combine a reachtube into one rect
 
-	:param trace: the reachtube (2d list) to be combined
-	:return: the combined rect (2d list)
-	"""
-	trace = np.array(trace)
-	# assert trace.shape[0] % 2 == 0
-	combined_trace = np.ndarray(shape=(2, trace.shape[-1]))
-	combined_trace[0] = np.min(trace[::2], 0)
-	combined_trace[1] = np.max(trace[1::2], 0)
-	return combined_trace.tolist()
+		:param trace: the reachtube (2d list) to be combined
+		:return: the combined rect (2d list)
+		"""
+		trace = np.array(trace)
+		# assert trace.shape[0] % 2 == 0
+		combined_trace = np.ndarray(shape=(2, trace.shape[-1]))
+		combined_trace[0] = np.min(trace[::2], 0)
+		combined_trace[1] = np.max(trace[1::2], 0)
+		return combined_trace.tolist()
+	return trace[-1]
 
 
 def checkHeight(root, max_height):

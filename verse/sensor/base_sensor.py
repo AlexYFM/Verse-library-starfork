@@ -1,9 +1,12 @@
 import numpy as np
 from verse.agents.base_agent import BaseAgent
-
+from verse.starsproto import StarSet
 
 def sets(d, thing, attrs, vals):
-    d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
+    if len(vals) > 0 and type(vals[0]) == StarSet:
+        d.update({thing + "." + k: v for k, v in zip(attrs, [x for x in range(len(attrs))])})
+    else:
+        d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
 
 
 def adds(d, thing, attrs, vals):
@@ -70,6 +73,8 @@ class BaseSensor:
                         continue
                         raise ValueError(f"Invalid arg for ego")
                     cont_var = agent.decision_logic.state_defs[arg_type].cont
+                    print("here is cont_var")
+                    print(cont_var)
                     disc_var = agent.decision_logic.state_defs[arg_type].disc
                     stat_var = agent.decision_logic.state_defs[arg_type].static
                     set_states_2d(

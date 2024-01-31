@@ -196,6 +196,7 @@ class StarSet:
         return new_star.is_empty()
 
     def union():
+        #TODO: likely need
         return None
 
     def intersect(star1, star2):
