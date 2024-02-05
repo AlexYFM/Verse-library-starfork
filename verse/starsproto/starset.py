@@ -3,6 +3,7 @@ import copy
 from scipy.optimize import linprog
 import matplotlib.pyplot as plt
 import polytope as pc
+from z3 import *
 
 class StarSet:
     """
@@ -146,7 +147,7 @@ class StarSet:
 
 
 
-    def contains_point(self, pt):
+    def contain_point(self, pt):
         raise Exception("not implemented")
         if not (pt.ndim == 1) and not (len(pt) == self.n):
             raise Exception("pt should be n dimensional vector")
@@ -195,6 +196,43 @@ class StarSet:
         #if new star is empty, this star is entirely contained in input halfspace
         return new_star.is_empty()
 
+    def contains_point(self, point):
+        print("in solver")
+        cur_solver = Solver() 
+        #create alpha vars
+        alpha = [ Real("alpha_%s" % (j+1)) for j in range(len(self.basis)) ]
+        #create state vars
+        state_vec = [ Real("state_%s" % (j+1)) for j in range(len(self.center)) ] 
+        #add the equality constraint
+        #x = x_0 + sum of alpha*
+        for j in range(len(state_vec)):
+            new_eq = self.center[j]
+            for i in range(len(self.basis)):
+                #take the sum of alpha_i times the jth index of each basis
+                new_eq = new_eq + (alpha[i]*self.basis[i][j])
+            cur_solver.add(new_eq == point[j])
+
+        #add the constraint on alpha
+        for i in range(len(self.C)):
+            new_eq = 0
+            for j in range(len(alpha)):
+                new_eq = new_eq + (self.C[i][j] * alpha[j])
+            cur_solver.add(new_eq <= self.g[i])
+           
+       
+
+        print(cur_solver.check())
+        #print(cur_solver.model())
+
+    
+    def add_constraints(solver, var_map, starlist):
+        #use the map to give var names [var0, var1, ....]
+        #create a alpha vector
+        #add the center to point equation
+        #add the constraint on alpha
+
+        return solver
+    
     def union():
         #TODO: likely need
         return None

@@ -2,7 +2,7 @@ import numpy as np
 from starset import StarSet
 from starset import HalfSpace
 
-basis = np.array([[1, 0], [0, 1]])
+basis = np.array([[2, 0], [0, 2]])
 center = np.array([3,3])
 
 #def pred(alpha_vec):
@@ -25,9 +25,14 @@ def sim(vec, t):
         vec = np.matmul(A, vec)
     return vec
 
-basis_rot = np.array([[0.707,0.707],[-0.707,0.707]])
+#basis_rot = np.array([[0.707,0.707],[-0.707,0.707]])
 
 test = StarSet(center,basis, C, g)
+
+
+test.contains_point(np.array([0,0]))
+print("done with contains test")
+exit()
 test.plot()
 
 
