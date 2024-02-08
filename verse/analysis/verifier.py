@@ -964,6 +964,8 @@ class Verifier:
 						guard_can_satisfied = guard_expression.evaluate_guard_disc(
 							agent, discrete_variable_dict, cont_var_dict_template, track_map
 						)
+						print("CHECK HEREEEE")
+						print(cont_var_dict_template)
 						if not guard_can_satisfied:
 							continue
 						cached_guards[agent_id].append(

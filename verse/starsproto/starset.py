@@ -108,6 +108,17 @@ class StarSet:
             new_basis[i] = np.subtract(new_x, new_center)
         return self.superposition(new_center, new_basis)
 
+    '''
+    given a reset function, this will construct a new star set
+    '''
+    def apply_reset(self, reset_function):
+        new_center = reset_function(self.center,t)
+        new_basis = np.empty_like(self.basis)
+        for i in range(0, len(self.basis)):
+            vec = self.basis[i]
+            new_x = reset_function(np.add(self.center, vec))
+            new_basis[i] = np.subtract(new_x, new_center)
+        return self.superposition(new_center, new_basis)
 
     def show(self):
         print(self.center)
@@ -202,10 +213,10 @@ class StarSet:
         #create alpha vars
         alpha = [ Real("alpha_%s" % (j+1)) for j in range(len(self.basis)) ]
         #create state vars
-        state_vec = [ Real("state_%s" % (j+1)) for j in range(len(self.center)) ] 
+        #state_vec = [ Real("state_%s" % (j+1)) for j in range(len(self.center)) ] 
         #add the equality constraint
         #x = x_0 + sum of alpha*
-        for j in range(len(state_vec)):
+        for j in range(len(point)):
             new_eq = self.center[j]
             for i in range(len(self.basis)):
                 #take the sum of alpha_i times the jth index of each basis
@@ -225,12 +236,28 @@ class StarSet:
         #print(cur_solver.model())
 
     
-    def add_constraints(solver, var_map, starlist):
-        #use the map to give var names [var0, var1, ....]
-        #create a alpha vector
-        #add the center to point equation
-        #add the constraint on alpha
+    def add_constraints(cur_solver, state_vec):
+        #state vec contains the list of z3 variables for the state in the order of the state vectors for the star set
+        #rest is same as above but change point to state vec
+        #create alpha vars
+        alpha = [ Real("alpha_%s" % (j+1)) for j in range(len(self.basis)) ]
+        #create state vars
+        #state_vec = [ Real("state_%s" % (j+1)) for j in range(len(self.center)) ] 
+        #add the equality constraint
+        #x = x_0 + sum of alpha*
+        for j in range(len(state_vec)):
+            new_eq = self.center[j]
+            for i in range(len(self.basis)):
+                #take the sum of alpha_i times the jth index of each basis
+                new_eq = new_eq + (alpha[i]*self.basis[i][j])
+            cur_solver.add(new_eq == state_vec[j])
 
+        #add the constraint on alpha
+        for i in range(len(self.C)):
+            new_eq = 0
+            for j in range(len(alpha)):
+                new_eq = new_eq + (self.C[i][j] * alpha[j])
+            cur_solver.add(new_eq <= self.g[i])
         return solver
     
     def union():

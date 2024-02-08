@@ -54,8 +54,8 @@ class TrackMode(Enum):
 from verse.scenario import Scenario, ScenarioConfig
 from verse.analysis import ReachabilityMethod
 
-#scenario = Scenario(ScenarioConfig(parallel=False))
-scenario = Scenario()
+scenario = Scenario(ScenarioConfig(parallel=False))
+#scenario = Scenario()
 
 scenario.set_map(Map2Lanes())
 

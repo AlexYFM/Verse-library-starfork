@@ -95,8 +95,8 @@ class GuardExpressionAst:
         # This magic line here is because SymPy will evaluate == to be False
         # Therefore we are not be able to get free symbols from it
         # Thus we need to replace "==" to something else
-
-        symbols_map = {v: k for k, v in self.cont_variables.items() if k in guard_str}
+        symbols_map = {v: k for k, v in self.cont_variables.items()} # if k in guard_str}
+        #TODO: consider changing symbols_map to have all vars?
 
         for vars in reversed(self.cont_variables):
             guard_str = guard_str.replace(vars, self.cont_variables[vars])
@@ -109,24 +109,15 @@ class GuardExpressionAst:
             #get the z3 vars from varDict self.varDict
             #add them to the solver
         print("BIG TODO: figure out what is kept here!!")
-        if stars:
-            print(guard_str)
-            #print(globals())
-            print(self.varDict)
-            print(self.cont_variables)
-            
-            cur_solver.add(
-                eval(guard_str, globals(), self.varDict)
-            )  # TODO use an object instead of `eval` a string
-        else:
-            print(guard_str)
-            print("look here!!")
-            #print(globals())
-            print(self.varDict)
-            print(self.cont_variables)
-            #cur_solver.add(
-            #    eval(guard_str, globals(), self.varDict)
-            #)  # TODO use an object instead of `eval` a string
+        print(guard_str)
+        #print(globals())
+        print(self.varDict)
+        print(self.cont_variables)
+
+        cur_solver.add(
+            eval(guard_str, globals(), self.varDict)
+        )  # TODO use an object instead of `eval` a string
+
         return cur_solver, symbols_map
     
     def eval_star(guard_str, globals, varDict):
@@ -157,6 +148,16 @@ class GuardExpressionAst:
         print(continuous_variable_dict)
         print(symbols)
         print(agent)
+        #TODO: check if works with more than 2 agents
+        #TODO: add dummy symbols for missing
+        #collect for each agent (that has a var in the symbols map) the z3 variable vector and the starset 
+        #need to create a var if z3 variable is not in symbols (maybe add to symbols)
+        agents = []
+        for var in continuous_variable_dict.keys():
+            agent = var.strip(".")[0]
+            if not (agent in agents):
+                agents[agent] = continuous_variable_dict[var]
+            if not var in 
             #TODO: add state vars
             #for each agent:
             #get the star set (from cont_var_dict?)
