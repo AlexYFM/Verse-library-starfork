@@ -49,9 +49,9 @@ class TrackMode(Enum):
     M10 = auto()
 
 
-from verse.scenario import Scenario
+from verse.scenario import Scenario, ScenarioConfig
 
-scenario = Scenario()
+scenario = Scenario(ScenarioConfig(parallel=False))
 scenario.set_map(Map2Lanes())
 
 from tutorial_agent import CarAgent

@@ -30,7 +30,7 @@ def sim(vec, t):
 test = StarSet(center,basis, C, g)
 
 
-test.contains_point(np.array([0,0]))
+test.contains_point(np.array([3,2]))
 print("done with contains test")
 exit()
 test.plot()

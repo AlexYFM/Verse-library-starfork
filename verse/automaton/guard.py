@@ -101,13 +101,22 @@ class GuardExpressionAst:
         for vars in reversed(self.cont_variables):
             guard_str = guard_str.replace(vars, self.cont_variables[vars])
         # XXX `locals` should override `globals` right?
+            
+
+            #TODO: add state vars
+            #for each agent:
+            #get the star set (from cont_var_dict?)
+            #get the z3 vars from varDict self.varDict
+            #add them to the solver
+        print("BIG TODO: figure out what is kept here!!")
         if stars:
             print(guard_str)
             #print(globals())
             print(self.varDict)
             print(self.cont_variables)
+            
             cur_solver.add(
-                eval_star(guard_str, globals(), self.varDict)
+                eval(guard_str, globals(), self.varDict)
             )  # TODO use an object instead of `eval` a string
         else:
             print(guard_str)
@@ -115,9 +124,9 @@ class GuardExpressionAst:
             #print(globals())
             print(self.varDict)
             print(self.cont_variables)
-            cur_solver.add(
-                eval(guard_str, globals(), self.varDict)
-            )  # TODO use an object instead of `eval` a string
+            #cur_solver.add(
+            #    eval(guard_str, globals(), self.varDict)
+            #)  # TODO use an object instead of `eval` a string
         return cur_solver, symbols_map
     
     def eval_star(guard_str, globals, varDict):
@@ -134,37 +143,46 @@ class GuardExpressionAst:
             self.cont_variables[cont_vars] = underscored
             self.varDict[underscored] = Real(underscored)
         print(self.varDict)
-        if stars:
-            #evaluates if its possible to satisfy this
-            z3_string = self.generate_z3_expression()
-            print("z3 done")
-            print(z3_string)
-            if isinstance(z3_string, bool):
-                return z3_string, z3_string
 
-            cur_solver, symbols = self._build_guard(z3_string, agent)
-            cur_solver.push()
+        #evaluates if its possible to satisfy this
+        z3_string = self.generate_z3_expression()
+        print("z3 done")
+        print(z3_string)
+        if isinstance(z3_string, bool):
+            return z3_string, z3_string
+
+        cur_solver, symbols = self._build_guard(z3_string, agent)
+        cur_solver.push()
+        print("working here")
+        print(continuous_variable_dict)
+        print(symbols)
+        print(agent)
+            #TODO: add state vars
+            #for each agent:
+            #get the star set (from cont_var_dict?)
+            #get the z3 vars from varDict self.varDict
+            #add them to the solver
+        for symbol in symbols:
+            start, end = continuous_variable_dict[symbols[symbol]]
+            cur_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
+        if cur_solver.check() == sat:
+            # The reachtube hits the guard
+            cur_solver.pop()
+            res = True
+
+            tmp_solver = Solver()
+            tmp_solver.add(Not(cur_solver.assertions()[0]))
+            #TODO: add state vars
+            #for each agent:
+            #get the star set (from cont_var_dict?)
+            #get the z3 vars from varDict
+            #add them to the solver
             for symbol in symbols:
                 start, end = continuous_variable_dict[symbols[symbol]]
-                cur_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
-            if cur_solver.check() == sat:
-                # The reachtube hits the guard
-                cur_solver.pop()
-                res = True
-
-                tmp_solver = Solver()
-                tmp_solver.add(Not(cur_solver.assertions()[0]))
-                for symbol in symbols:
-                    start, end = continuous_variable_dict[symbols[symbol]]
-                    tmp_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
-                if tmp_solver.check() == unsat:
-                    is_contained = True
-        else:
-            print("foo")
-            #evaluate each bit with the half spaces and then check if equation of bools is sat is z3?
-            
-            #HERE We need to get a half space for each part of guard and check if each satisfies
-
+                tmp_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
+            if tmp_solver.check() == unsat:
+                is_contained = True
+        
 
         return res, is_contained
 

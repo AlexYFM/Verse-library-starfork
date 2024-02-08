@@ -678,7 +678,7 @@ class Verifier:
 		self.verification_queue.sort(key=lambda p: p[1:])
 		if done_node.height <= max_height:
 			self.nodes.extend(next_nodes)
-		combined_inits = {a: combine_all(inits) for a, inits in done_node.init.items()}
+		combined_inits = done_node.init[-1] #{a: combine_all(inits) for a, inits in done_node.init.items()}
 		for (
 			new,
 			aid,
@@ -1265,6 +1265,15 @@ class Verifier:
 
 			# Assume linear function for continuous variables
 			else:
+				#agent_state.continuous_reset(reset_variable, expr, agent, ego_type,cont_var_dict, rect)
+				print("in the reset section")
+				print(reset_variable)
+				print(expr)
+				print(agent)
+				print(ego_type)
+				print(cont_var_dict)
+				print(rect)
+
 				lhs = reset_variable
 				rhs = expr
 				found = False
@@ -1282,7 +1291,8 @@ class Verifier:
 				for var in cont_var_dict:
 					if var in expr:
 						symbols.append(var)
-
+				print(symbols)
+				print("out of reset")
 				# TODO: Implement this function
 				# The input to this function is a list of used symbols and the cont_var_dict
 				# The ouput of this function is a list of tuple of values for each variable in the symbols list
@@ -1303,6 +1313,8 @@ class Verifier:
 
 				rect[0][lhs_idx] = lb
 				rect[1][lhs_idx] = ub
+
+				#For stars, we actually need
 
 		all_dest = itertools.product(*possible_dest)
 		dest = []

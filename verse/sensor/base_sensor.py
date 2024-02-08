@@ -3,10 +3,11 @@ from verse.agents.base_agent import BaseAgent
 from verse.starsproto import StarSet
 
 def sets(d, thing, attrs, vals):
-    if len(vals) > 0 and type(vals[0]) == StarSet:
-        d.update({thing + "." + k: v for k, v in zip(attrs, [x for x in range(len(attrs))])})
-    else:
-        d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
+    #if len(vals) > 0 and type(vals[0]) == StarSet:
+    #    d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
+    #else:
+    #    d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
+    d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
 
 
 def adds(d, thing, attrs, vals):
