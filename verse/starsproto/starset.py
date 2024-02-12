@@ -236,7 +236,7 @@ class StarSet:
         #print(cur_solver.model())
 
     
-    def add_constraints(cur_solver, state_vec):
+    def add_constraints(self, cur_solver, state_vec):
         #state vec contains the list of z3 variables for the state in the order of the state vectors for the star set
         #rest is same as above but change point to state vec
         #create alpha vars
@@ -258,7 +258,7 @@ class StarSet:
             for j in range(len(alpha)):
                 new_eq = new_eq + (self.C[i][j] * alpha[j])
             cur_solver.add(new_eq <= self.g[i])
-        return solver
+        #return cur_solver
     
     def union():
         #TODO: likely need

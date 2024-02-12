@@ -114,29 +114,20 @@ class GuardExpressionAst:
     def evaluate_guard_cont(self, agent, continuous_variable_dict, track_map, stars=True):
         res = False
         is_contained = False
-        print("evaluating guard")
-        print(continuous_variable_dict)
-        #print(self)
-        print(self.varDict)
+
         for cont_vars in continuous_variable_dict:
             underscored = cont_vars.replace(".", "_")
             self.cont_variables[cont_vars] = underscored
             self.varDict[underscored] = Real(underscored)
-        print(self.varDict)
 
         #evaluates if its possible to satisfy this
         z3_string = self.generate_z3_expression()
-        print("z3 done")
-        print(z3_string)
+
         if isinstance(z3_string, bool):
             return z3_string, z3_string
 
         cur_solver, symbols = self._build_guard(z3_string, agent)
         cur_solver.push()
-        print("working here")
-        print(continuous_variable_dict)
-        print(symbols)
-        print(agent)
 
         #self.varDict - has all z3 variables as string:variable
         #continuous_variable_dict - has the star sets for each variable in the guard
@@ -152,8 +143,6 @@ class GuardExpressionAst:
             agent = var.split(".")[0]
             if not (agent in agent_states):
                 agent_states[agent] = continuous_variable_dict[var]
-        print("created here!!")
-        print(agent_states)
         agent_vars = {}
         for agent in agent_states.keys():
             #TODO: make better
@@ -162,35 +151,20 @@ class GuardExpressionAst:
                 agent_vars[agent] = [v for k, v in self.varDict.items() if agent in k]
             if len(other_agents) > 1:
                 agent_vars[agent] = []
-                #prefix = other_agents[:-1]
-                #num = other_agents[-1]
                 #go through and find the other possible values
                 for var_string, value in continuous_variable_dict.items():
                     if isinstance(value, list): 
                         variable_name = var_string.split(".")[1]
                         if not agent + "_" + variable_name in self.varDict.keys():
-                            #TODO: add this creation to where varDict is created
                             agent_vars[agent].append(Real(agent + "." + variable_name))
-                            print("created")
                         else:
                             agent_vars[agent].append(self.varDict[agent + "_" + variable_name])
-                            print("found")
                             
-        print(agent_vars)
-        #print(self.varDict)
-        #agents contains a agent and its starset
-        #get all variables names:
 
-            #TODO: add state vars
-            #for each agent:
-            #get the star set (from cont_var_dict?)
-            #get the z3 vars from varDict self.varDict
-            #add them to the solver
         #construct the border of the hyperrectangle at a specific time
         #hyperrectangle = reach(t)
-        for symbol in symbols:
-            start, end = continuous_variable_dict[symbols[symbol]]
-            cur_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
+        for agent in agent_states.keys():
+            agent_states[agent].add_constraints(cur_solver, agent_vars[agent])
         #guard \cap hyperrectangle =/= empty set
         # if false, then they are disjoint
         if cur_solver.check() == sat: #checking intersection with guard
@@ -202,14 +176,9 @@ class GuardExpressionAst:
             tmp_solver = Solver()
             #negation of guards
             tmp_solver.add(Not(cur_solver.assertions()[0]))
-            #TODO: add state vars
-            #for each agent:
-            #get the star set (from cont_var_dict?)
-            #get the z3 vars from varDict
-            #add them to the solver
-            for symbol in symbols:
-                start, end = continuous_variable_dict[symbols[symbol]]
-                tmp_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
+           
+            for agent in agent_states.keys():
+                agent_states[agent].add_constraints(cur_solver, agent_vars[agent])
             #check if all starset in guard
             if tmp_solver.check() == unsat:
                 is_contained = True
