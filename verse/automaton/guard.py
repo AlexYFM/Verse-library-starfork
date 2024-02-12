@@ -95,24 +95,12 @@ class GuardExpressionAst:
         # This magic line here is because SymPy will evaluate == to be False
         # Therefore we are not be able to get free symbols from it
         # Thus we need to replace "==" to something else
-        symbols_map = {v: k for k, v in self.cont_variables.items()} # if k in guard_str}
+        symbols_map = {v: k for k, v in self.cont_variables.items() if k in guard_str}
         #TODO: consider changing symbols_map to have all vars?
 
         for vars in reversed(self.cont_variables):
             guard_str = guard_str.replace(vars, self.cont_variables[vars])
         # XXX `locals` should override `globals` right?
-            
-
-            #TODO: add state vars
-            #for each agent:
-            #get the star set (from cont_var_dict?)
-            #get the z3 vars from varDict self.varDict
-            #add them to the solver
-        print("BIG TODO: figure out what is kept here!!")
-        print(guard_str)
-        #print(globals())
-        print(self.varDict)
-        print(self.cont_variables)
 
         cur_solver.add(
             eval(guard_str, globals(), self.varDict)
@@ -129,6 +117,7 @@ class GuardExpressionAst:
         print("evaluating guard")
         print(continuous_variable_dict)
         #print(self)
+        print(self.varDict)
         for cont_vars in continuous_variable_dict:
             underscored = cont_vars.replace(".", "_")
             self.cont_variables[cont_vars] = underscored
@@ -148,30 +137,70 @@ class GuardExpressionAst:
         print(continuous_variable_dict)
         print(symbols)
         print(agent)
+
+        #self.varDict - has all z3 variables as string:variable
+        #continuous_variable_dict - has the star sets for each variable in the guard
+        #self.cont_vars ??
         #TODO: check if works with more than 2 agents
         #TODO: add dummy symbols for missing
         #collect for each agent (that has a var in the symbols map) the z3 variable vector and the starset 
         #need to create a var if z3 variable is not in symbols (maybe add to symbols)
-        agents = []
-        for var in continuous_variable_dict.keys():
-            agent = var.strip(".")[0]
-            if not (agent in agents):
-                agents[agent] = continuous_variable_dict[var]
-            if not var in 
+
+        #TODO: change to create agent_states along with continuous variable dict
+        agent_states = {}
+        for var in symbols.values():
+            agent = var.split(".")[0]
+            if not (agent in agent_states):
+                agent_states[agent] = continuous_variable_dict[var]
+        print("created here!!")
+        print(agent_states)
+        agent_vars = {}
+        for agent in agent_states.keys():
+            #TODO: make better
+            other_agents = agent.split("_")
+            if len(other_agents) == 1:
+                agent_vars[agent] = [v for k, v in self.varDict.items() if agent in k]
+            if len(other_agents) > 1:
+                agent_vars[agent] = []
+                #prefix = other_agents[:-1]
+                #num = other_agents[-1]
+                #go through and find the other possible values
+                for var_string, value in continuous_variable_dict.items():
+                    if isinstance(value, list): 
+                        variable_name = var_string.split(".")[1]
+                        if not agent + "_" + variable_name in self.varDict.keys():
+                            #TODO: add this creation to where varDict is created
+                            agent_vars[agent].append(Real(agent + "." + variable_name))
+                            print("created")
+                        else:
+                            agent_vars[agent].append(self.varDict[agent + "_" + variable_name])
+                            print("found")
+                            
+        print(agent_vars)
+        #print(self.varDict)
+        #agents contains a agent and its starset
+        #get all variables names:
+
             #TODO: add state vars
             #for each agent:
             #get the star set (from cont_var_dict?)
             #get the z3 vars from varDict self.varDict
             #add them to the solver
+        #construct the border of the hyperrectangle at a specific time
+        #hyperrectangle = reach(t)
         for symbol in symbols:
             start, end = continuous_variable_dict[symbols[symbol]]
             cur_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
-        if cur_solver.check() == sat:
+        #guard \cap hyperrectangle =/= empty set
+        # if false, then they are disjoint
+        if cur_solver.check() == sat: #checking intersection with guard
             # The reachtube hits the guard
+            # remove hyperrectangle
             cur_solver.pop()
             res = True
 
             tmp_solver = Solver()
+            #negation of guards
             tmp_solver.add(Not(cur_solver.assertions()[0]))
             #TODO: add state vars
             #for each agent:
@@ -181,6 +210,7 @@ class GuardExpressionAst:
             for symbol in symbols:
                 start, end = continuous_variable_dict[symbols[symbol]]
                 tmp_solver.add(self.varDict[symbol] >= start, self.varDict[symbol] <= end)
+            #check if all starset in guard
             if tmp_solver.check() == unsat:
                 is_contained = True
         

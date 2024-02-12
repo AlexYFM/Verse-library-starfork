@@ -956,7 +956,8 @@ class Verifier:
 						)
 						reset = (path.var, path.val_veri)
 						guard_expression = GuardExpressionAst([path.cond_veri])
-
+						print("DOUBLE CHECK THISS")
+						print(cont_var_dict_template)
 						cont_var_updater = guard_expression.parse_any_all_new(
 							cont_var_dict_template, discrete_variable_dict, length_dict
 						)
@@ -964,8 +965,7 @@ class Verifier:
 						guard_can_satisfied = guard_expression.evaluate_guard_disc(
 							agent, discrete_variable_dict, cont_var_dict_template, track_map
 						)
-						print("CHECK HEREEEE")
-						print(cont_var_dict_template)
+						
 						if not guard_can_satisfied:
 							continue
 						cached_guards[agent_id].append(
@@ -1309,6 +1309,7 @@ class Verifier:
 					tmp = copy.deepcopy(expr)
 					for symbol_idx, symbol in enumerate(symbols):
 						tmp = tmp.replace(symbol, str(comb[symbol_idx]))
+					#apply reset on cont vars
 					res = eval(tmp, {}, val_dict)
 					lb = min(lb, res)
 					ub = max(ub, res)

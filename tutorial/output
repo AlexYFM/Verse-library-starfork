@@ -1,0 +1,925 @@
+in verify
+compute_full_reachtube_step
+=============================================================
+node 0 start: 0
+{'car1': ('Normal', 'T0'), 'car2': ('Normal', 'T0')}
+ReachabilityMethod.STAR_SETS
+in stars calculate full bloated tube
+inital set
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF9850>, <verse.starsproto.starset.StarSet object at 0x0000022509AF9850>]]
+[0. 0. 0. 0.]
+[0. 0. 0. 0.]
+examine centers
+ReachabilityMethod.STAR_SETS
+in stars calculate full bloated tube
+inital set
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF9430>, <verse.starsproto.starset.StarSet object at 0x0000022509AF9430>]]
+[0. 0. 0. 0.]
+[0. 0. 0. 0.]
+examine centers
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+  <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>
+ <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]
+{'ego.x': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.y': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.theta': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'ego.v': array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object), 'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>],
+      dtype=object)]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]], ('Normal', 'T0'), []), 'car2': ([[0.0, <verse.starsproto.starset.StarSet object at 0x0000022509CD0F10>], [0.01, <verse.starsproto.starset.StarSet object at 0x0000022509CD0FA0>]], ('Normal', 'T0'), [])}
+EXAMINE THIS
+{}
+['x', 'y', 'theta', 'v']
+[[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+  <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]]
+others
+x
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+y
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+theta
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+v
+[<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>
+ <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>]
+{'others.x': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.y': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.theta': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)], 'others.v': [array([<verse.starsproto.starset.StarSet object at 0x0000022509AF99A0>,
+       <verse.starsproto.starset.StarSet object at 0x0000022509AF9880>],
+      dtype=object)]}
+EXAMINE THIS
+{}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+in sense
+{'car1': ([19.990000000000002, <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>], ('Normal', 'T0'), []), 'car2': ([19.990000000000002, <verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], ('Normal', 'T0'), [])}
+getting ego
+getting other
+[LambdaArg(name='ego', typ='State', is_list=False), LambdaArg(name='others', typ='State', is_list=True), LambdaArg(name='track_map', typ=None, is_list=False)]
+{'ego.x': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.y': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.theta': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.v': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>}
+others
+['x', 'y', 'theta', 'v']
+call adds
+EXAMINE THIS
+{'ego.x': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.y': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.theta': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.v': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>}
+['x', 'y', 'theta', 'v']
+[<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>]
+others
+x
+<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>
+y
+<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>
+theta
+<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>
+v
+<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>
+{'ego.x': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.y': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.theta': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.v': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'others.x': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.y': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.theta': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.v': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>]}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal'}
+['agent_mode', 'track_mode']
+('Normal', 'T0')
+others
+agent_mode
+Normal
+track_mode
+Normal
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+EXAMINE THIS
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+[]
+[]
+others
+{'ego.agent_mode': 'Normal', 'ego.track_mode': 'Normal', 'others.agent_mode': ['Normal'], 'others.track_mode': ['Normal']}
+evaluating guard
+{'ego.x': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.y': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.theta': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.v': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'others.x': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.y': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.theta': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.v': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>]}
+{}
+{'ego_x': ego_x, 'ego_y': ego_y, 'ego_theta': ego_theta, 'ego_v': ego_v, 'others_x': others_x, 'others_y': others_y, 'others_theta': others_theta, 'others_v': others_v}
+z3 done
+True
+evaluating guard
+{'ego.x': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.y': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.theta': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.v': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'others.x': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.y': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.theta': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.v': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others_0.x': <verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>, 'others_0.y': <verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>}
+{}
+{'ego_x': ego_x, 'ego_y': ego_y, 'ego_theta': ego_theta, 'ego_v': ego_v, 'others_x': others_x, 'others_y': others_y, 'others_theta': others_theta, 'others_v': others_v, 'others_0_x': others_0_x, 'others_0_y': others_0_y}
+z3 done
+Not(And(And(((- 1) < (ego.x - others_0.x)),((ego.x - others_0.x) < 1)),And(((- 1) < (ego.y - others_0.y)),((ego.y - others_0.y) < 1))))
+working here
+{'ego.x': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.y': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.theta': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'ego.v': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'others.x': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.y': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.theta': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others.v': [<verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>], 'others_0.x': <verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>, 'others_0.y': <verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>}
+{'ego_x': 'ego.x', 'ego_y': 'ego.y', 'others_0_x': 'others_0.x', 'others_0_y': 'others_0.y'}
+<tutorial_agent.CarAgent object at 0x0000022560B48A90>
+created here!!
+{'ego': <verse.starsproto.starset.StarSet object at 0x0000022509CD0E50>, 'others_0': <verse.starsproto.starset.StarSet object at 0x0000022509E5FC70>}
+{'ego': [ego_x, ego_y, ego_theta, ego_v], 'others_0': [others_0_x, others_0_y]}
