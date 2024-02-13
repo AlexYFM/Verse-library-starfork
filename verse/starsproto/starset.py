@@ -112,7 +112,7 @@ class StarSet:
     given a reset function, this will construct a new star set
     '''
     def apply_reset(self, reset_function):
-        new_center = reset_function(self.center,t)
+        new_center = reset_function(self.center)
         new_basis = np.empty_like(self.basis)
         for i in range(0, len(self.basis)):
             vec = self.basis[i]
@@ -125,6 +125,10 @@ class StarSet:
         print(self.basis)
         print(self.C)
         print(self.g)
+    
+    def copy(self):
+        star_copy = StarSet(self.center, self.basis, self.C, self.g)
+        return star_copy
 
     def get_halfspace_intersection(starset, constraint_vec, rhs_val):
         #starset.show()

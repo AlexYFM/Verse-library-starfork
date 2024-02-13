@@ -309,11 +309,11 @@ class Verifier:
 		combine = False
 		if combine:
 			for combine_seg_idx in missing_seg_idx_list:
-				for item in initial_set:
+				#for item in initial_set:
 					#print(item)
-					for star in item:
-						print(star)
-						star.show()
+					#for star in item:
+						#print(star)
+						#star.show()
 				#print(initial_set)
 				#print("done with init set")
 				rect_seg = initial_set[combine_seg_idx : combine_seg_idx + combine_seg_length]
@@ -335,6 +335,7 @@ class Verifier:
 		print("inital set")
 		print(initial_set)
 		#fix this!
+		print("TODO: is the initial set correct?")
 		inital_star = initial_set[0][0]
 		reach_tube = inital_star.calc_reach_tube(
 			mode_label,
@@ -678,7 +679,8 @@ class Verifier:
 		self.verification_queue.sort(key=lambda p: p[1:])
 		if done_node.height <= max_height:
 			self.nodes.extend(next_nodes)
-		combined_inits = done_node.init[-1] #{a: combine_all(inits) for a, inits in done_node.init.items()}
+		print("TODO: fix the combining/remove it")
+		combined_inits = {a: combine_all(inits) for a, inits in done_node.init.items()}
 		for (
 			new,
 			aid,
@@ -956,8 +958,7 @@ class Verifier:
 						)
 						reset = (path.var, path.val_veri)
 						guard_expression = GuardExpressionAst([path.cond_veri])
-						print("DOUBLE CHECK THISS")
-						print(cont_var_dict_template)
+						print("here we are")
 						cont_var_updater = guard_expression.parse_any_all_new(
 							cont_var_dict_template, discrete_variable_dict, length_dict
 						)
@@ -1017,7 +1018,9 @@ class Verifier:
 		reduction_queue = [(0, trace_length, trace_length)]
 		# for idx, end_idx,combine_len in reduction_queue:
 		hits = []
-		while reduction_queue:
+		print("TODO delete debugging change")
+		for lakjdf in range(1,5):
+		#while reduction_queue:
 			idx, end_idx, combine_len = reduction_queue.pop()
 			reduction_needed = False
 			# print((idx, combine_len))
@@ -1099,7 +1102,7 @@ class Verifier:
 					assert isinstance(path, ModePath)
 					new_cont_var_dict = copy.deepcopy(cont_vars)
 					one_step_guard: GuardExpressionAst = copy.deepcopy(guard_expression)
-
+					print("RESET STARTS HERE?????")
 					Verifier.apply_cont_var_updater(new_cont_var_dict, continuous_variable_updater)
 					guard_can_satisfied = one_step_guard.evaluate_guard_hybrid(
 						agent, discrete_variable_dict, new_cont_var_dict, track_map
@@ -1113,6 +1116,7 @@ class Verifier:
 						any_contained = any_contained or is_contained
 					# TODO: Can we also store the cont and disc var dict so we don't have to call sensor again?
 					if guard_satisfied and combine_len == 1:
+						print("entered guard statisfied")
 						reset_expr = ResetExpression((path.var, path.val_veri))
 						resets[reset_expr.var].append(
 							(
@@ -1136,6 +1140,7 @@ class Verifier:
 					break
 				if combine_len == 1:
 					# Perform combination over all possible resets to generate all possible real resets
+					print("in combine reset")
 					combined_reset_list = list(itertools.product(*resets.values()))
 					if len(combined_reset_list) == 1 and combined_reset_list[0] == ():
 						continue
@@ -1229,7 +1234,18 @@ class Verifier:
 		dest = copy.deepcopy(agent_mode)
 		possible_dest = [[elem] for elem in dest]
 		ego_type = find(agent.decision_logic.args, lambda a: a.name == EGO).typ
-		rect = copy.deepcopy([agent_state[0][1:], agent_state[1][1:]])
+
+		print("working on apply reset")
+		print(reset_list)
+		print(all_agent_state)
+		print(agent)
+		print(dest)
+		print(possible_dest)
+		print(ego_type)
+		print(agent_state)
+
+
+		new_state = [agent_state[0], agent_state[1].copy()] #copy.deepcopy([agent_state[0][1:], agent_state[1][1:]])
 
 		# The reset_list here are all the resets for a single transition. Need to evaluate each of them
 		# and then combine them together
@@ -1237,6 +1253,13 @@ class Verifier:
 			reset, disc_var_dict, cont_var_dict, _, _p = reset_tuple
 			reset_variable = reset.var
 			expr = reset.expr
+			print("working on reset")
+			print(reset)
+			print(disc_var_dict)
+			print(cont_var_dict)
+			print(reset_variable)
+			print(expr)
+
 			# First get the transition destinations
 			if "mode" in reset_variable:
 				found = False
@@ -1268,14 +1291,7 @@ class Verifier:
 			# Assume linear function for continuous variables
 			else:
 				#agent_state.continuous_reset(reset_variable, expr, agent, ego_type,cont_var_dict, rect)
-				print("in the reset section")
-				print(reset_variable)
-				print(expr)
-				print(agent)
-				print(ego_type)
-				print(cont_var_dict)
-				print(rect)
-
+				print("in the else")
 				lhs = reset_variable
 				rhs = expr
 				found = False
@@ -1288,43 +1304,32 @@ class Verifier:
 				if not found:
 					raise ValueError(f"Reset continuous variable {cts_variable} not found")
 				# substituting low variables
-
-				symbols = []
+				statevec = []
 				for var in cont_var_dict:
-					if var in expr:
-						symbols.append(var)
-				print(symbols)
-				print("out of reset")
-				# TODO: Implement this function
-				# The input to this function is a list of used symbols and the cont_var_dict
-				# The ouput of this function is a list of tuple of values for each variable in the symbols list
-				# The function will explor all possible combinations of low bound and upper bound for the variables in the symbols list
-				comb_list = Verifier._get_combinations(symbols, cont_var_dict)
+					#TODO: check that this only gets run on ego?
+					if 'ego' in var:
+						statevec.append(var)
+				#TODO fix the fact that the equation has x instead of ego.x
 
-				lb = float("inf")
-				ub = -float("inf")
 
-				for comb in comb_list:
+				print(statevec)
+				#concern: how to handle the case where you need other agents state. for now: assume you do not
+				def reset_func(state): #[ego.x, ego.y, ...]
 					val_dict = {}
-					tmp = copy.deepcopy(expr)
-					for symbol_idx, symbol in enumerate(symbols):
-						tmp = tmp.replace(symbol, str(comb[symbol_idx]))
-					#apply reset on cont vars
-					res = eval(tmp, {}, val_dict)
-					lb = min(lb, res)
-					ub = max(ub, res)
+					for i in range(0, len(state)):
+						val_dict[statevec[i]] = state[i]
+					eval(lhs +  '=' + expr, {}, val_dict)
+					return state
+				print("TODO: find where/when this gets set elsewhere")
+				new_state[1].apply_reset(reset_func)
 
-				rect[0][lhs_idx] = lb
-				rect[1][lhs_idx] = ub
-
-				#For stars, we actually need
 
 		all_dest = itertools.product(*possible_dest)
 		dest = []
 		for tmp in all_dest:
 			dest.append(tmp)
 
-		return dest, rect
+		return dest, new_cont_state
 
 	@staticmethod
 	def _get_combinations(symbols, cont_var_dict):

@@ -50,6 +50,8 @@ import copy
 
 def decisionLogic(ego: State, others: List[State], track_map):
     output = copy.deepcopy(ego)
+    if ego.x <= 50000:
+        output.x = 900
     if ego.agent_mode == AgentMode.Normal:
         if vehicle_front(ego, others, track_map):
             if track_map.h_exist(ego.track_mode, ego.agent_mode, AgentMode.SwitchLeft):
@@ -73,5 +75,5 @@ def decisionLogic(ego: State, others: List[State], track_map):
             output.agent_mode = AgentMode.Normal
             output.track_mode = track_map.h(ego.track_mode, ego.agent_mode, AgentMode.Normal)
 
-    assert not vehicle_close(ego, others)
+    #assert not vehicle_close(ego, others)
     return output

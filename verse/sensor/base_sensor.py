@@ -12,20 +12,14 @@ def sets(d, thing, attrs, vals):
 
 
 def adds(d, thing, attrs, vals):
-    print("EXAMINE THIS")
-    print(d)
-    print(attrs)
-    print(vals)
-    print(thing)
+    #TODO: how does this respond with more than 2 agents
     #    d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
     for k, v in zip(attrs, [vals[0] for x in range(len(attrs))]):
-        print(k)
-        print(v)
         if thing + "." + k not in d:
             d[thing + "." + k] = [v]
         else:
             d[thing + "." + k].append(v)
-    print(d)
+
 
 
 def set_states_2d(cnts, disc, thing, val, cont_var, disc_var, stat_var):
@@ -46,10 +40,6 @@ def set_states_3d(cnts, disc, thing, val, cont_var, disc_var, stat_var):
 
 def add_states_2d(cont, disc, thing, val, cont_var, disc_var, stat_var):
     state, mode, static = val
-    print(cont)
-    print(thing)
-    print(cont_var)
-    print("call adds")
     adds(cont, thing, cont_var, state[1:])
     adds(disc, thing, disc_var, mode)
     adds(disc, thing, stat_var, static)
@@ -70,8 +60,6 @@ def add_states_3d(cont, disc, thing, val, cont_var, disc_var, stat_var):
 class BaseSensor:
     # The baseline sensor is omniscient. Each agent can get the state of all other agents
     def sense(self, agent: BaseAgent, state_dict, lane_map):
-        print("in sense")
-        print(state_dict)
         cont = {}
         disc = {}
         len_dict = {"others": len(state_dict) - 1}
@@ -90,17 +78,14 @@ class BaseSensor:
                         continue
                         raise ValueError(f"Invalid arg for ego")
                     cont_var = agent.decision_logic.state_defs[arg_type].cont
-                    print("getting ego")
-                    #print(cont_var)
+
                     disc_var = agent.decision_logic.state_defs[arg_type].disc
                     stat_var = agent.decision_logic.state_defs[arg_type].static
                     set_states_2d(
                         cont, disc, "ego", state_dict[agent_id], cont_var, disc_var, stat_var
                     )
                 else:
-                    print("getting other")
                     controller_args = agent.decision_logic.args
-                    print(controller_args)
                     arg_type = None
                     arg_name = None
                     for arg in controller_args:

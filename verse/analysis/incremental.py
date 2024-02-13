@@ -121,10 +121,12 @@ def convert_reach_trans(agent_id, transit_agents, inits, transition, trans_ind):
 
 
 def combine_all(inits):
-    return [
-        [min(a) for a in np.transpose(np.array(inits)[:, 0])],
-        [max(a) for a in np.transpose(np.array(inits)[:, 1])],
-    ]
+    print("TODO: fix this as needed")
+    return inits[-1]
+    #return [
+    #    [min(a) for a in np.transpose(np.array(inits)[:, 0])],
+    #    [max(a) for a in np.transpose(np.array(inits)[:, 1])],
+    #]
 
 
 def sim_trans_suit(a: Dict[str, List[float]], b: Dict[str, List[float]]) -> bool:
