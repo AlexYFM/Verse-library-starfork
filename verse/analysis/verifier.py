@@ -1313,12 +1313,19 @@ class Verifier:
 
 
 				print(statevec)
+
 				#concern: how to handle the case where you need other agents state. for now: assume you do not
 				def reset_func(state): #[ego.x, ego.y, ...]
 					val_dict = {}
+					tmp_exp = copy.deepcopy(expr)
 					for i in range(0, len(state)):
-						val_dict[statevec[i]] = state[i]
-					eval(lhs +  '=' + expr, {}, val_dict)
+						if statevec[i] in tmp_exp:
+							tmp_exp = tmp_exp.replace(statevec[i], str(state[i]))
+					print(tmp_exp)
+					result = eval(tmp_exp, {}, val_dict)
+					for i in range(0, len(state)):
+						if lhs in statevec[i]:
+							state[i] = result
 					return state
 				print("TODO: find where/when this gets set elsewhere")
 				new_state[1].apply_reset(reset_func)
@@ -1329,7 +1336,7 @@ class Verifier:
 		for tmp in all_dest:
 			dest.append(tmp)
 
-		return dest, new_cont_state
+		return dest, new_state
 
 	@staticmethod
 	def _get_combinations(symbols, cont_var_dict):
