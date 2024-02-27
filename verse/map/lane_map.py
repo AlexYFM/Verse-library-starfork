@@ -103,6 +103,7 @@ class LaneMap:
             agent_mode_src = agent_mode_src.name
         if isinstance(agent_mode_dest, Enum):
             agent_mode_dest = agent_mode_dest.name
+        print(self.h_dict)
         if self.h_dict == {}:
             return None
         return self.h_dict[(lane_idx, agent_mode_src, agent_mode_dest)]

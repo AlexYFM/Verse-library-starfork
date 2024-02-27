@@ -75,6 +75,9 @@ class CarAgent(BaseAgent):
         trace[1:, 0] = [round(i * time_step, 10) for i in range(num_points)]
         trace[0, 1:] = init
         for i in range(num_points):
+            init[0] = init[0] + 0.001
+            init[1] = init[1] + 0.001
+            '''
             steering, a = self.action_handler(mode, init, lane_map)
             r = ode(self.dynamic)
             r.set_initial_value(init).set_f_params([steering, a])
@@ -82,6 +85,9 @@ class CarAgent(BaseAgent):
             init = res.flatten()
             if init[3] < 0:
                 init[3] = 0
+            trace[i + 1, 0] = time_step * (i + 1)
+            trace[i + 1, 1:] = init
+            '''
             trace[i + 1, 0] = time_step * (i + 1)
             trace[i + 1, 1:] = init
         return trace

@@ -529,7 +529,8 @@ def reachtube_tree(
     agent_list = list(root.agent.keys())
     # input check
     num_dim = np.array(root.trace[agent_list[0]]).shape[1]
-    check_dim(num_dim, x_dim, y_dim, print_dim_list)
+    #check_dim(num_dim, x_dim, y_dim, print_dim_list)
+    print("TODO: add check dim")
     if print_dim_list is None:
         print_dim_list = range(0, num_dim)
 
@@ -558,6 +559,9 @@ def reachtube_tree(
     for agent_id in root.mode:
         previous_mode[agent_id] = []
     text_pos = "middle center"
+    #TODO: added this for tmp working
+    #fig = update_style(fig)
+    #eturn fig
     while queue != []:
         node = queue.pop(0)
         traces = node.trace
@@ -565,11 +569,17 @@ def reachtube_tree(
         i = 0
         for agent_id in traces:
             trace = np.array(traces[agent_id])
+            verts = []
+            for idx in range(0, len(trace)):
+                verts.extend(np.array(trace[idx][1].get_verts()))
+            new_x_dim = x_dim - 1
+            new_y_dim = y_dim - 1
+            #trace_x = np.array(verts[:,new_x_dim])
             if scale_type == "trace":
-                x_min = min(x_min, min(trace[:, x_dim]))
-                x_max = max(x_max, max(trace[:, x_dim]))
-                y_min = min(y_min, min(trace[:, y_dim]))
-                y_max = max(y_max, max(trace[:, y_dim]))
+                x_min = min(x_min, min(verts[:,new_x_dim]))
+                x_max = max(x_max, max(verts[:,new_x_dim]))
+                y_min = min(y_min, min(verts[:,new_y_dim]))
+                y_max = max(y_max, max(verts[:,new_y_dim]))
             i = agent_list.index(agent_id)
             if label_mode != "None":
                 if previous_mode[agent_id] != node.mode[agent_id]:
@@ -577,8 +587,8 @@ def reachtube_tree(
                     mode_point_color = plot_color[agent_list.index(agent_id) % num_theme][0]
                     fig.add_trace(
                         go.Scatter(
-                            x=[trace[0, x_dim]],
-                            y=[trace[0, y_dim]],
+                            x=[verts[:,new_x_dim]],
+                            y=[verts[:,new_y_dim]],
                             mode="markers+text",
                             line_color=mode_point_color,
                             opacity=0.5,
@@ -592,8 +602,8 @@ def reachtube_tree(
                 if node.assert_hits != None and agent_id in node.assert_hits[0]:
                     fig.add_trace(
                         go.Scatter(
-                            x=[trace[-1, x_dim]],
-                            y=[trace[-1, y_dim]],
+                            x=[verts[:,new_x_dim]],
+                            y=[verts[:,new_x_dim]],
                             mode="markers+text",
                             text=["HIT:\n" + a for a in node.assert_hits[0][agent_id]],
                             textfont={"color": "black"},
@@ -816,19 +826,22 @@ def reachtube_tree_single(
     show_legend = False
     fillcolor = plot_color[scheme_dict[color]][1]
     linecolor = plot_color[scheme_dict[color]][0]
+    new_x_dim = x_dim - 1
+    new_y_dim = y_dim - 1
     while queue != []:
         node = queue.pop(0)
         traces = node.trace
         trace = np.array(traces[agent_id])
         max_id = len(trace) - 1
-        if (
-            len(np.unique(np.array([trace[i][x_dim] for i in range(0, max_id)]))) == 1
-            and len(np.unique(np.array([trace[i][y_dim] for i in range(0, max_id)]))) == 1
-        ):
+        print(trace)
+        if len(trace) == 1:
+            #len(np.unique(np.array([trace[i][x_dim] for i in range(0, max_id)]))) == 1
+            #and len(np.unique(np.array([trace[i][y_dim] for i in range(0, max_id)]))) == 1
+            verts = np.array(trace[0][1].get_verts())
             fig.add_trace(
                 go.Scatter(
-                    x=[trace[0][x_dim]],
-                    y=[trace[0][y_dim]],
+                    x=[verts[:,new_x_dim]],
+                    y=[verts[:,new_y_dim]],
                     mode="markers+lines",
                     #  fill='toself',
                     #  fillcolor=fillcolor,
@@ -841,10 +854,10 @@ def reachtube_tree_single(
             )
         elif combine_rect == None:
             max_id = len(trace) - 1
-            trace_x_odd = np.array([trace[i][x_dim] for i in range(0, max_id, 2)])
-            trace_x_even = np.array([trace[i][x_dim] for i in range(1, max_id + 1, 2)])
-            trace_y_odd = np.array([trace[i][y_dim] for i in range(0, max_id, 2)])
-            trace_y_even = np.array([trace[i][y_dim] for i in range(1, max_id + 1, 2)])
+            trace_x_odd = np.array([np.array(trace[i][1].get_verts()[:,new_x_dim]) for i in range(0, max_id, 2)])
+            trace_x_even = np.array([np.array(trace[i][1].get_verts()[:,new_x_dim]) for i in range(1, max_id + 1, 2)])
+            trace_y_odd = np.array([np.array(trace[i][1].get_verts()[:,new_y_dim]) for i in range(0, max_id, 2)])
+            trace_y_even = np.array([np.array(trace[i][1].get_verts()[:,new_y_dim]) for i in range(1, max_id + 1, 2)])
             fig.add_trace(
                 go.Scatter(
                     x=trace_x_odd.tolist() + trace_x_even[::-1].tolist() + [trace_x_odd[0]],
@@ -860,25 +873,29 @@ def reachtube_tree_single(
                 )
             )
         elif combine_rect <= 1:
+
             for idx in range(0, len(trace), 2):
-                trace_x = np.array(
-                    [
-                        trace[idx][x_dim],
-                        trace[idx + 1][x_dim],
-                        trace[idx + 1][x_dim],
-                        trace[idx][x_dim],
-                        trace[idx][x_dim],
-                    ]
-                )
-                trace_y = np.array(
-                    [
-                        trace[idx][y_dim],
-                        trace[idx][y_dim],
-                        trace[idx + 1][y_dim],
-                        trace[idx + 1][y_dim],
-                        trace[idx][y_dim],
-                    ]
-                )
+                verts = np.array(trace[idx][1].get_verts())
+                trace_x = np.array(verts[:,new_x_dim])
+                 #np.array(
+                    #[
+                        
+                        #trace[idx][x_dim],
+                        #trace[idx + 1][x_dim],
+                        #trace[idx + 1][x_dim],
+                        #trace[idx][x_dim],
+                        #trace[idx][x_dim],
+                    #]
+                #)
+                trace_y = np.array(verts[:,new_y_dim]) #np.array(
+                    #[
+                    #    trace[idx][y_dim],
+                    #    trace[idx][y_dim],
+                    #    trace[idx + 1][y_dim],
+                    #    trace[idx + 1][y_dim],
+                    #    trace[idx][y_dim],
+                    #]
+                #)
                 fig.add_trace(
                     go.Scatter(
                         x=trace_x,
@@ -894,6 +911,7 @@ def reachtube_tree_single(
                     )
                 )
         else:
+            print("TODO: update this branch")
             for idx in range(0, len(trace), combine_rect * 2):
                 trace_seg = trace[idx : idx + combine_rect * 2]
                 max_id = len(trace_seg - 1)
@@ -1268,6 +1286,11 @@ def draw_map(
 
 
 def check_dim(num_dim: int, x_dim: int = 1, y_dim: int = 2, print_dim_list: List(int) = None):
+    #print(num_dim)
+    #print(x_dim)
+    #print(y_dim)
+    #print(print_dim_list)
+    return True
     if x_dim < 0 or x_dim >= num_dim:
         raise ValueError(f"wrong x dimension value {x_dim}")
     if y_dim < 0 or y_dim >= num_dim:

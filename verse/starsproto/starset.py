@@ -4,6 +4,7 @@ from scipy.optimize import linprog
 import matplotlib.pyplot as plt
 import polytope as pc
 from z3 import *
+from verse.plotter.plotterStar import *
 
 class StarSet:
     """
@@ -77,10 +78,8 @@ class StarSet:
         reach_tubes = []
         sim_results = sim_func(mode_label, self.center, time_horizon, time_step, lane_map)
         new_centers = sim_results[:,1:] #slice off the time
+        print(new_centers)
         times = sim_results[:,0] #get the 0th index from all the results
-        print(self.center)
-        print(new_centers[0])
-        print("examine centers")
         new_basises = []
         #new_basises = np.expand_dims(new_basises, axis=(2) ) #add a 3rd dimension to the basis to hold each step
         for i in range(0, len(self.basis)):
@@ -94,6 +93,10 @@ class StarSet:
             for basis_list in new_basises:
                 basis.append(basis_list[i])
             reach_tubes.append([times[i], self.superposition(new_centers[i], basis)])
+
+        #KB working
+        #plot_agent_trace(reach_tubes)
+        #sys.exit(0)
         return reach_tubes
 
     '''
@@ -280,7 +283,7 @@ class StarSet:
     #stanley bak code
     def get_verts(stateset):
         """get the vertices of the stateset"""
-
+        #TODO: generalize for n dimensional
         verts = []
         x_pts = []
         y_pts = []
@@ -288,16 +291,19 @@ class StarSet:
         for angle in np.linspace(0, 2*np.pi, 100):
             x_component = np.cos(angle)
             y_component = np.sin(angle)
-            direction = np.array([[x_component], [y_component]])
+            #TODO: needs to work for 3d and any dim of non-graphed state
+            direction = np.array([[x_component], [y_component], [0], [0]])
 
             pt = stateset.maximize(direction)
 
             verts.append(pt)
             #print(pt)
             x_pts.append(pt[0][0])
-            print(pt[0][0])
+            #print(pt[0][0])
             y_pts.append(pt[1][0])
-            print(pt[1][0])
+            #print(pt[1][0])
+        x_pts.append(x_pts[0])
+        y_pts.append(y_pts[0])
         return (x_pts, y_pts)
 
 #stanley bak code

@@ -8,6 +8,7 @@ import warnings
 import ast
 import ray, time
 from verse.parser import unparse
+from verse.plotter.plotterStar import *
 
 from verse.analysis.analysis_tree import AnalysisTreeNode, AnalysisTree, TraceType
 from verse.analysis.dryvr import calc_bloated_tube, SIMTRACENUM
@@ -984,6 +985,8 @@ class Verifier:
 		#     if len(trace) < 2:
 		#         pp(("weird state", aid, trace))
 		for agent, path in paths:
+			#KB working
+			#plot_reach_tube(node.trace, agent.id)
 			if len(agent.decision_logic.args) == 0:
 				continue
 			agent_id = agent.id
@@ -1015,12 +1018,15 @@ class Verifier:
 		guard_hits = []
 		guard_hit = False
 		reduction_rate = 10
-		reduction_queue = [(0, trace_length, trace_length)]
+
+		reduction_queue = [] #[(0, trace_length, trace_length)]
 		# for idx, end_idx,combine_len in reduction_queue:
 		hits = []
-		print("TODO delete debugging change")
-		for lakjdf in range(1,5):
-		#while reduction_queue:
+
+		#add segments of length 1 to queue for now
+		reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
+
+		while reduction_queue:
 			idx, end_idx, combine_len = reduction_queue.pop()
 			reduction_needed = False
 			# print((idx, combine_len))
@@ -1102,7 +1108,7 @@ class Verifier:
 					assert isinstance(path, ModePath)
 					new_cont_var_dict = copy.deepcopy(cont_vars)
 					one_step_guard: GuardExpressionAst = copy.deepcopy(guard_expression)
-					print("RESET STARTS HERE?????")
+					#print("RESET STARTS HERE?????")
 					Verifier.apply_cont_var_updater(new_cont_var_dict, continuous_variable_updater)
 					guard_can_satisfied = one_step_guard.evaluate_guard_hybrid(
 						agent, discrete_variable_dict, new_cont_var_dict, track_map
@@ -1116,7 +1122,7 @@ class Verifier:
 						any_contained = any_contained or is_contained
 					# TODO: Can we also store the cont and disc var dict so we don't have to call sensor again?
 					if guard_satisfied and combine_len == 1:
-						print("entered guard statisfied")
+						#print("entered guard statisfied")
 						reset_expr = ResetExpression((path.var, path.val_veri))
 						resets[reset_expr.var].append(
 							(
@@ -1140,7 +1146,6 @@ class Verifier:
 					break
 				if combine_len == 1:
 					# Perform combination over all possible resets to generate all possible real resets
-					print("in combine reset")
 					combined_reset_list = list(itertools.product(*resets.values()))
 					if len(combined_reset_list) == 1 and combined_reset_list[0] == ():
 						continue
@@ -1203,6 +1208,7 @@ class Verifier:
 					src_track = node.get_track(agent, node.mode[agent])
 					dest_mode = node.get_mode(agent, dest)
 					dest_track = node.get_track(agent, dest)
+
 					if dest_track == track_map.h(src_track, src_mode, dest_mode):
 						if config.print_level >= 2:
 							print(count)
@@ -1235,15 +1241,6 @@ class Verifier:
 		possible_dest = [[elem] for elem in dest]
 		ego_type = find(agent.decision_logic.args, lambda a: a.name == EGO).typ
 
-		print("working on apply reset")
-		print(reset_list)
-		print(all_agent_state)
-		print(agent)
-		print(dest)
-		print(possible_dest)
-		print(ego_type)
-		print(agent_state)
-
 
 		new_state = [agent_state[0], agent_state[1].copy()] #copy.deepcopy([agent_state[0][1:], agent_state[1][1:]])
 
@@ -1253,12 +1250,6 @@ class Verifier:
 			reset, disc_var_dict, cont_var_dict, _, _p = reset_tuple
 			reset_variable = reset.var
 			expr = reset.expr
-			print("working on reset")
-			print(reset)
-			print(disc_var_dict)
-			print(cont_var_dict)
-			print(reset_variable)
-			print(expr)
 
 			# First get the transition destinations
 			if "mode" in reset_variable:

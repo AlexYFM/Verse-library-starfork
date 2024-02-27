@@ -17,6 +17,9 @@ h_dict = {
 
 
 def h(lane_idx, agent_mode_src, agent_mode_dest):
+    #TODO: is there bad a reason this needed to be added??
+    if not (lane_idx, agent_mode_src, agent_mode_dest) in h_dict.keys():
+        return None
     return h_dict[(lane_idx, agent_mode_src, agent_mode_dest)]
 
 
@@ -72,11 +75,16 @@ scenario.add_agent(car2)
 
 scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
 
-traces_veri = scenario.verify(20, 0.01)
+traces_veri = scenario.verify(20, 0.01, max_height=5)
+#traces_veri = scenario.verify(20, 0.01)
+
 
 import plotly.graph_objects as go
-from verse.plotter.plotter2D import *
+from verse.plotter.plotterStar import *
 
-fig = go.Figure()
-fig = reachtube_tree(traces_veri, Map2Lanes(), fig, 1, 2, [1, 2], "lines", "trace")
-fig.show()
+reachtube_tree(traces_veri, Map2Lanes(), 0 , 1)
+
+#fig = go.Figure()
+#fig = reachtube_tree(traces_veri, Map2Lanes(), fig, 1, 2, [1, 2], "lines", "trace")
+#fig.show()
+#fig.write_html('test_fig.html', auto_open=True)
