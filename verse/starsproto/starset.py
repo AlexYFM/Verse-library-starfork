@@ -75,13 +75,12 @@ class StarSet:
     
 
     def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,lane_map):
-        reach_tubes = []
-        sim_results = sim_func(mode_label, self.center, time_horizon, time_step, lane_map)
+        reach_tubes = []#[[0,self]]
+        sim_results = sim_func(mode_label, self.center.copy(), time_horizon, time_step, lane_map)
+
         new_centers = sim_results[:,1:] #slice off the time
-        print(new_centers)
         times = sim_results[:,0] #get the 0th index from all the results
         new_basises = []
-        #new_basises = np.expand_dims(new_basises, axis=(2) ) #add a 3rd dimension to the basis to hold each step
         for i in range(0, len(self.basis)):
             vec = self.basis[i]
             new_x = sim_func(mode_label, np.add(self.center, vec), time_horizon, time_step, lane_map)[:,1:]
@@ -94,10 +93,12 @@ class StarSet:
                 basis.append(basis_list[i])
             reach_tubes.append([times[i], self.superposition(new_centers[i], basis)])
 
-        #KB working
-        #plot_agent_trace(reach_tubes)
-        #sys.exit(0)
+
         return reach_tubes
+
+
+    #def get_new_basis(x_0, new_x_0, new_x_i, basis):
+
 
     '''
    prototype function for now. Will likley need more args to properly run simulation
@@ -115,6 +116,7 @@ class StarSet:
     given a reset function, this will construct a new star set
     '''
     def apply_reset(self, reset_function):
+        print("YES WE ARE APPLYING A RESET")
         new_center = reset_function(self.center)
         new_basis = np.empty_like(self.basis)
         for i in range(0, len(self.basis)):
@@ -238,8 +240,9 @@ class StarSet:
             cur_solver.add(new_eq <= self.g[i])
            
        
-
-        print(cur_solver.check())
+        if cur_solver.check() == sat:
+            return True
+        return False
         #print(cur_solver.model())
 
     
@@ -280,6 +283,9 @@ class StarSet:
         plt.plot(xs, ys)
         plt.show()
 
+    def get_center_pt(self, x_dim, y_dim):
+        return (self.center[x_dim], self.center[y_dim])
+
     #stanley bak code
     def get_verts(stateset):
         """get the vertices of the stateset"""
@@ -300,7 +306,7 @@ class StarSet:
             #print(pt)
             x_pts.append(pt[0][0])
             #print(pt[0][0])
-            y_pts.append(pt[1][0])
+            y_pts.append(pt[0][1])
             #print(pt[1][0])
         x_pts.append(x_pts[0])
         y_pts.append(y_pts[0])
@@ -313,7 +319,9 @@ class StarSet:
         opt_direction *= -1
 
         # convert opt_direction to domain
+        #print(self.basis)
         domain_direction = opt_direction.T @ self.basis
+
 
         # use LP to optimize the constraints
         res = linprog(c=domain_direction, 
@@ -324,8 +332,14 @@ class StarSet:
         # convert point back to range
         #print(res.x)
         domain_pt = res.x.reshape((res.x.shape[0], 1))
-        range_pt = self.center + self.basis @ domain_pt
-        
+        #if domain_direction[0][0] == -1 and domain_direction[0][1] == 0:
+        #    print(domain_pt)
+        #range_pt = self.center + self.basis @ domain_pt
+        range_pt = self.center + domain_pt.T @ self.basis 
+
+        #if domain_direction[0][0] == -1 and domain_direction[0][1] == 0:
+        #    print(self.basis)
+        #    print(range_pt)
         # return the point
         return range_pt
 

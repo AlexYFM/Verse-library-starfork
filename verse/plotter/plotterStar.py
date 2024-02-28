@@ -9,9 +9,9 @@ from plotly.graph_objs.scatter import Marker
 from verse.analysis.analysis_tree import AnalysisTree, AnalysisTreeNode
 from verse.map.lane_map import LaneMap
 
-colors = ['orange', 'blue', 'green', 'red', 'yellow']
+colors = ['orange', 'blue', 'green', 'red', 'yellow', 'purple', 'teal']
 
-def reachtube_tree(
+def plot_reachtube_stars(
     root: Union[AnalysisTree, AnalysisTreeNode],
     map=None,
     x_dim: int = 0,
@@ -20,10 +20,10 @@ def reachtube_tree(
     print("graphing")
     if isinstance(root, AnalysisTree):
         root = root.root
-    root = sample_trace(root, 1000)
+    root = sample_trace(root, 100)
     agent_list = list(root.agent.keys())
+    i = 0
     for agent_id in agent_list:
-        i = 0
         #print(agent_id)
         reachtube_tree_single(
             root,
@@ -31,18 +31,21 @@ def reachtube_tree(
             x_dim,
             y_dim,
             colors[i])
-        i = i+1
+        i = (i+1)%7
     plt.show()
 
 
-def plot_reach_tube(traces, agent_id):
-    trace = np.array(traces[agent_id])
+def plot_reach_tube(traces, agent_id, freq = 100):
+    trace = np.array(traces[agent_id], freq)
     plot_agent_trace(trace)
 
-def plot_agent_trace(trace):
+def plot_agent_trace(trace, freq=100):
     for i in range(0, len(trace)):
-        x, y = np.array(trace[i][1].get_verts())
-        plt.plot(x, y, lw = 1, color = 'blue')
+        if i%freq == 0:
+            x, y = np.array(trace[i][1].get_verts())
+            plt.plot(x, y, lw = 1, color = colors[i%7])
+            centerx, centery = trace[i][1].get_center_pt(0, 1)
+            plt.plot(centerx, centery, 'o', color = colors[i%7])
     plt.show()
     
 
@@ -55,7 +58,7 @@ def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
         trace = np.array(traces[agent_id])
         #plot the trace
         for i in range(0, len(trace)):
-            trace[i][1].show()
+            #trace[i][1].show()
             #print(trace[i][1])
             x, y = np.array(trace[i][1].get_verts())
             #print(verts)

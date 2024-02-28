@@ -333,11 +333,11 @@ class Verifier:
 				print("done with combined rec")
 		
 		#TODO: what to do with the list of initial set? Some sort of combining?
-		print("inital set")
-		print(initial_set)
+
 		#fix this!
 		print("TODO: is the initial set correct?")
 		inital_star = initial_set[0][0]
+		#KB: task - why isn't initial star in reach tube
 		reach_tube = inital_star.calc_reach_tube(
 			mode_label,
 			time_horizon,
@@ -345,6 +345,7 @@ class Verifier:
 			sim_func,
 			lane_map=lane_map
 		)
+		#KB working - good up to here
 		   
 		if incremental:
 			cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))

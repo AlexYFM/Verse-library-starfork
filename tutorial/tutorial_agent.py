@@ -75,6 +75,33 @@ class CarAgent(BaseAgent):
         trace[1:, 0] = [round(i * time_step, 10) for i in range(num_points)]
         trace[0, 1:] = init
         for i in range(num_points):
+            #KB: BIG TODO: figure out how you would get actual velcoty
+            #init[0] =init[0] +  (init[3] *0.01)
+            #init[1] = init[1] + (init[3] * 0.01)
+            
+            steering, a = self.action_handler(mode, init, lane_map)
+            r = ode(self.dynamic)
+            r.set_initial_value(init).set_f_params([steering, a])
+            res: np.ndarray = r.integrate(r.t + time_step)
+            init = res.flatten()
+            if init[3] < 0:
+                init[3] = 0
+            trace[i + 1, 0] = time_step * (i + 1)
+            trace[i + 1, 1:] = init
+            
+
+        return trace
+    
+
+    def TC_simulate_orig(
+        self, mode: List[str], init, time_bound, time_step, lane_map: LaneMap = None
+    ) -> TraceType:
+        time_bound = float(time_bound)
+        num_points = int(np.ceil(time_bound / time_step))
+        trace = np.zeros((num_points + 1, 1 + len(init)))
+        trace[1:, 0] = [round(i * time_step, 10) for i in range(num_points)]
+        trace[0, 1:] = init
+        for i in range(num_points):
             init[0] = init[0] + 0.001
             init[1] = init[1] + 0.001
             '''
