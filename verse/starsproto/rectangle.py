@@ -2,6 +2,26 @@
 from verse.analysis import Verifier
 import copy, itertools, functools, pprint
 
+
+def handle_continuous_resets:
+    comb_list = Verifier._get_combinations(symbols, cont_var_dict)
+
+    lb = float("inf")
+    ub = -float("inf")
+
+    for comb in comb_list:
+        val_dict = {}
+        tmp = copy.deepcopy(expr)
+        for symbol_idx, symbol in enumerate(symbols):
+            tmp = tmp.replace(symbol, str(comb[symbol_idx]))
+        #apply reset on cont vars
+        res = eval(tmp, {}, val_dict)
+        lb = min(lb, res)
+        ub = max(ub, res)
+
+    rect[0][lhs_idx] = lb
+    rect[1][lhs_idx] = ub
+
 def add_constraints(self, cur_solver, state_vec):
     for symbol in symbols:
         start, end = continuous_variable_dict[symbols[symbol]]

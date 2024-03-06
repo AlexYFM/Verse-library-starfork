@@ -112,6 +112,7 @@ class GuardExpressionAst:
         return False
     
     def evaluate_guard_cont(self, agent, continuous_variable_dict, track_map, stars=True):
+        #breakpoint()
         res = False
         is_contained = False
 
@@ -163,10 +164,12 @@ class GuardExpressionAst:
 
         #construct the border of the hyperrectangle at a specific time
         #hyperrectangle = reach(t)
+        #breakpoint()
         for agent in agent_states.keys():
-            agent_states[agent].add_constraints(cur_solver, agent_vars[agent])
+            agent_states[agent].add_constraints(cur_solver, agent_vars[agent], agent)
         #guard \cap hyperrectangle =/= empty set
         # if false, then they are disjoint
+        #breakpoint()
         if cur_solver.check() == sat: #checking intersection with guard
             # The reachtube hits the guard
             # remove hyperrectangle
@@ -177,12 +180,12 @@ class GuardExpressionAst:
             #negation of guards
             tmp_solver.add(Not(cur_solver.assertions()[0]))
            
+           #KB todo faster way to add a second time without recomputing
             for agent in agent_states.keys():
-                agent_states[agent].add_constraints(cur_solver, agent_vars[agent])
+                agent_states[agent].add_constraints(tmp_solver, agent_vars[agent], agent)
             #check if all starset in guard
             if tmp_solver.check() == unsat:
                 is_contained = True
-        
 
         return res, is_contained
 
@@ -612,6 +615,7 @@ class GuardExpressionAst:
         """
         Evaluate guard that involves only discrete variables.
         """
+        #breakpoint()
         res = True
         for i, node in enumerate(self.ast_list):
             tmp, self.ast_list[i] = self._evaluate_guard_disc(
@@ -632,6 +636,7 @@ class GuardExpressionAst:
         :return: The return value will be a tuple. The first element in the tuple will either be a boolean value or a the evaluated value of of an expression involving guard
         The second element in the tuple will be the updated ast node
         """
+        #breakpoint()
         if isinstance(root, ast.Compare):
             expr = unparse(root)
             left, root.left = self._evaluate_guard_disc(
@@ -717,8 +722,7 @@ class GuardExpressionAst:
             expr = unparse(root)
             # Check if the root is a function
             if any([var in expr for var in disc_var_dict]) and all(
-                [var not in expr for var in cont_var_dict]
-            ):
+                [var not in expr for var in cont_var_dict]): 
                 # tmp = re.split('\(|\)',expr)
                 # while "" in tmp:
                 #     tmp.remove("")
@@ -726,8 +730,10 @@ class GuardExpressionAst:
                 #     if arg in disc_var_dict:
                 #         expr = expr.replace(arg,f'"{disc_var_dict[arg]}"')
                 # res = eval(expr)
+                #breakpoint()
                 for arg in disc_var_dict:
                     expr = expr.replace(arg, f'"{disc_var_dict[arg]}"')
+                #breakpoint()
                 res = eval(expr)
                 if isinstance(res, bool):
                     if res:

@@ -902,7 +902,9 @@ class Verifier:
 		Optional[Dict[str, List[str]]],
 		Optional[Dict[str, List[Tuple[str, List[str], List[float]]]]],
 	]:
+		print("in transition verify opt")
 		# For each agent
+		#breakpoint()
 		agent_guard_dict = defaultdict(list)
 		cached_guards = defaultdict(list)
 		min_trans_ind = None
@@ -965,6 +967,7 @@ class Verifier:
 							cont_var_dict_template, discrete_variable_dict, length_dict
 						)
 						Verifier.apply_cont_var_updater(cont_var_dict_template, cont_var_updater)
+						#breakpoint()
 						guard_can_satisfied = guard_expression.evaluate_guard_disc(
 							agent, discrete_variable_dict, cont_var_dict_template, track_map
 						)
@@ -985,12 +988,13 @@ class Verifier:
 		# for aid, trace in node.trace.items():
 		#     if len(trace) < 2:
 		#         pp(("weird state", aid, trace))
+		#breakpoint()
 		for agent, path in paths:
 			#KB working
-			#plot_reach_tube(node.trace, agent.id)
 			if len(agent.decision_logic.args) == 0:
 				continue
 			agent_id = agent.id
+			#KB working: why only 0:2!
 			state_dict = {
 				aid: (node.trace[aid][0:2], node.mode[aid], node.static[aid]) for aid in node.agent
 			}
@@ -1004,29 +1008,45 @@ class Verifier:
 			cont_var_updater = guard_expression.parse_any_all_new(
 				cont_var_dict_template, discrete_variable_dict, length_dict
 			)
+			#KB check in on this
+			#breakpoint()
+			#print(cont_var_dict_template)
 			Verifier.apply_cont_var_updater(cont_var_dict_template, cont_var_updater)
+			#print(cont_var_dict_template)
+			#KB why is this getting called on guard that is not just discrete? Has get_longitudinal_position?
 			guard_can_satisfied = guard_expression.evaluate_guard_disc(
 				agent, discrete_variable_dict, cont_var_dict_template, track_map
 			)
+			#print("KB: here is where things arent getting added? check on functions above")
+			
 			if not guard_can_satisfied:
 				continue
+			#KB check here
+			#import pdb; pdb.set_trace()
+			#KB check guard dict here??
+			#breakpoint()
 			agent_guard_dict[agent_id].append(
 				(guard_expression, cont_var_updater, copy.deepcopy(discrete_variable_dict), path)
 			)
+			#print(agent_guard_dict)
+		#breakpoint()
+		#KB why trace length floor 2??
+		#trace_length = int(min(len(v) for v in node.trace.values()) // 2)
+		trace_length = int(min(len(v) for v in node.trace.values()))
 
-		trace_length = int(min(len(v) for v in node.trace.values()) // 2)
 		# pp(("trace len", trace_length, {a: len(t) for a, t in node.trace.items()}))
 		guard_hits = []
 		guard_hit = False
-		reduction_rate = 10
+		reduction_rate = trace_length #10
 
 		reduction_queue = [] #[(0, trace_length, trace_length)]
 		# for idx, end_idx,combine_len in reduction_queue:
 		hits = []
-
+		#print(reduction_queue)
 		#add segments of length 1 to queue for now
+		#KB: todo check for off by one error
 		reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
-
+		#import pdb; pdb.set_trace()
 		while reduction_queue:
 			idx, end_idx, combine_len = reduction_queue.pop()
 			reduction_needed = False
@@ -1035,12 +1055,14 @@ class Verifier:
 			# end_idx = min(idx+combine_len, trace_length)
 			state_dict = {
 				aid: (
-					combine_rect(node.trace[aid][idx * 2 : end_idx * 2]),
+					node.trace[aid][idx],
+					#combine_rect(node.trace[aid][idx * 2 : end_idx * 2]),
 					node.mode[aid],
 					node.static[aid],
 				)
 				for aid in node.agent
 			}
+			
 			if min_trans_ind != None and idx > min_trans_ind:
 				if hits:
 					guard_hits.append((hits, state_dict, idx))
@@ -1061,9 +1083,11 @@ class Verifier:
 				resets = defaultdict(list)
 				# Check safety conditions
 				for i, a in enumerate(agent.decision_logic.asserts_veri):
+					#breakpoint()
 					pre_expr = a.pre
 
 					def eval_expr(expr):
+						#breakpoint()
 						ge = GuardExpressionAst([copy.deepcopy(expr)])
 						cont_var_updater = ge.parse_any_all_new(cont_vars, disc_vars, len_dict)
 						Verifier.apply_cont_var_updater(cont_vars, cont_var_updater)
@@ -1071,11 +1095,13 @@ class Verifier:
 						if sat:
 							sat = ge.evaluate_guard_hybrid(agent, disc_vars, cont_vars, track_map)
 							if sat:
+								#breakpoint()
 								sat, contained = ge.evaluate_guard_cont(agent, cont_vars, track_map)
 								sat = sat and contained
 						return sat
-
+					#breakpoint()
 					if eval_expr(pre_expr):
+						#breakpoint()
 						if not eval_expr(a.cond):
 							if combine_len == 1:
 								label = a.label if a.label != None else f"<assert {i}>"
@@ -1097,15 +1123,16 @@ class Verifier:
 					break
 				if agent_id in asserts:
 					continue
+				#KB here is what prevent further checking
 				if agent_id not in agent_guard_dict:
 					continue
-
 				unchecked_cache_guards = [
 					g[:-1] for g in cached_guards[agent_id] if g[-1] < idx
 				]  # FIXME: off by 1?
 				for guard_expression, continuous_variable_updater, discrete_variable_dict, path in (
 					agent_guard_dict[agent_id] + unchecked_cache_guards
 				):
+					#KB working: not getting in here? agent_guard_dict??
 					assert isinstance(path, ModePath)
 					new_cont_var_dict = copy.deepcopy(cont_vars)
 					one_step_guard: GuardExpressionAst = copy.deepcopy(guard_expression)

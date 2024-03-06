@@ -30,7 +30,8 @@ def vehicle_front(ego, others, track_map):
     res = any(
         (
             6
-            < track_map.get_longitudinal_position(other.track_mode, [other.x, other.y])
+            <
+            track_map.get_longitudinal_position(other.track_mode, [other.x, other.y])
             - track_map.get_longitudinal_position(ego.track_mode, [ego.x, ego.y])
             < 8
             and ego.track_mode == other.track_mode
@@ -73,5 +74,5 @@ def decisionLogic(ego: State, others: List[State], track_map):
             output.agent_mode = AgentMode.Normal
             output.track_mode = track_map.h(ego.track_mode, ego.agent_mode, AgentMode.Normal)
 
-    #assert not vehicle_close(ego, others)
+    assert not vehicle_close(ego, others)
     return output

@@ -2,56 +2,70 @@ import numpy as np
 from verse.agents.base_agent import BaseAgent
 from verse.starsproto import StarSet
 
-def sets(d, thing, attrs, vals):
-    d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
-    #if len(vals) > 0 and type(vals[0]) == StarSet:
-    #    d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
+def sets(d, thing, attrs, vals, stars):
+    if stars:
+        d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
+    else:
+        d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
+
+#def sets_disc(d, thing, attrs, vals)
+#    if len(vals) > 0 and type(vals[0]) == StarSet:
+#        d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
     #else:
     #    d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
     #d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
 
 
-def adds(d, thing, attrs, vals):
+def adds(d, thing, attrs, vals, stars):
     #TODO: how does this respond with more than 2 agents
     #    d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
-    for k, v in zip(attrs, [vals[0] for x in range(len(attrs))]):
-        if thing + "." + k not in d:
-            d[thing + "." + k] = [v]
-        else:
-            d[thing + "." + k].append(v)
+    if stars:
+        for k, v in zip(attrs, [vals[0] for x in range(len(attrs))]):
+            if thing + "." + k not in d:
+                d[thing + "." + k] = [v]
+            else:
+                d[thing + "." + k].append(v)
+    else:
+        for k, v in zip(attrs, vals):
+            if thing + "." + k not in d:
+                d[thing + "." + k] = [v]
+            else:
+                d[thing + "." + k].append(v)
+
+    
 
 
 
 def set_states_2d(cnts, disc, thing, val, cont_var, disc_var, stat_var):
     state, mode, static = val
-    sets(cnts, thing, cont_var, state[1:])
-    sets(disc, thing, disc_var, mode)
-    sets(disc, thing, stat_var, static)
+    sets(cnts, thing, cont_var, state[1:], True)
+    sets(disc, thing, disc_var, mode, False)
+    sets(disc, thing, stat_var, static, False)
 
 
 def set_states_3d(cnts, disc, thing, val, cont_var, disc_var, stat_var):
     state, mode, static = val
     transp = np.transpose(np.array(state)[:, 1:])
     # assert len(transp) == 4
-    sets(cnts, thing, cont_var, transp)
-    sets(disc, thing, disc_var, mode)
-    sets(disc, thing, stat_var, static)
+    sets(cnts, thing, cont_var, transp, True)
+    sets(disc, thing, disc_var, mode, False)
+    sets(disc, thing, stat_var, static, False)
 
 
 def add_states_2d(cont, disc, thing, val, cont_var, disc_var, stat_var):
     state, mode, static = val
-    adds(cont, thing, cont_var, state[1:])
-    adds(disc, thing, disc_var, mode)
-    adds(disc, thing, stat_var, static)
+    adds(cont, thing, cont_var, state[1:], True)
+    adds(disc, thing, disc_var, mode, False)
+    adds(disc, thing, stat_var, static, False)
 
 
 def add_states_3d(cont, disc, thing, val, cont_var, disc_var, stat_var):
     state, mode, static = val
     transp = np.transpose(np.array(state)[:, 1:])
     # assert len(transp) == 4
-    adds(cont, thing, cont_var, transp)
-    adds(disc, thing, disc_var, mode)
-    adds(disc, thing, stat_var, static)
+    adds(cont, thing, cont_var, transp, True)
+    adds(disc, thing, disc_var, mode, False)
+    adds(disc, thing, stat_var, static, False)
 
 
 # TODO-PARSER: Update base sensor

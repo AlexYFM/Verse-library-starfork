@@ -68,14 +68,17 @@ car1 = CarAgent("car1", file_name="./dl_sec5.py")
 initial_set_polytope = pc.box2poly([[0,0.5], [-0.5,0.5], [0,0], [2,2]])
 car1.set_initial(StarSet.from_polytope(initial_set_polytope), (AgentMode.Normal, TrackMode.T0))
 car2 = CarAgent("car2", file_name="./dl_sec5.py")
-initial_set_polytope_car2 = pc.box2poly([[1,1.4], [-0.4,0.4], [0,0], [1,1]])
+#initial_set_polytope_car2 = pc.box2poly([[1,1.4], [-0.4,0.4], [0,0], [1,1]])
+initial_set_polytope_car2 = pc.box2poly([[20,20.5], [-0.5,0.5], [0,0], [1,1]])
+
+
 car2.set_initial(StarSet.from_polytope(initial_set_polytope_car2), (AgentMode.Normal, TrackMode.T0))
 scenario.add_agent(car1)
 scenario.add_agent(car2)
 
 scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
 
-traces_veri = scenario.verify(10, 0.01)
+traces_veri = scenario.verify(20, 0.01)
 #traces_veri = scenario.verify(20, 0.01)
 
 
