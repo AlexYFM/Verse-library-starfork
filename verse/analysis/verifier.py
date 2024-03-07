@@ -335,8 +335,10 @@ class Verifier:
 		#TODO: what to do with the list of initial set? Some sort of combining?
 
 		#fix this!
-		print("TODO: is the initial set correct?")
-		inital_star = initial_set[0][0]
+		#print("TODO: is the initial set correct?")
+		#print(initial_set)
+		inital_star = initial_set[0][1]
+
 		#KB: task - why isn't initial star in reach tube
 		reach_tube = inital_star.calc_reach_tube(
 			mode_label,
@@ -600,7 +602,9 @@ class Verifier:
 			# Each transition will contain a list of rectangles and their corresponding indexes in the original list
 			# if len(transition) != 6:
 			#     pp(("weird trans", transition))
+			#breakpoint()
 			transit_agent_idx, src_mode, dest_mode, next_init, idx, path = transition
+			#breakpoint()
 			start_idx, end_idx = idx[0], idx[-1]
 
 			truncated_trace = {}
@@ -617,6 +621,8 @@ class Verifier:
 			next_node_uncertain_param = node.uncertain_param
 			next_node_mode[transit_agent_idx] = dest_mode
 			next_node_agent = node.agent
+			print("HERE!!")
+			#print(truncated_trace)
 			next_node_start_time = list(truncated_trace.values())[0][0][0]
 			next_node_init = {}
 			next_node_trace = {}
@@ -1003,7 +1009,9 @@ class Verifier:
 			)
 			# TODO-PARSER: Get equivalent for this function
 			# Construct the guard expression
+			#breakpoint()
 			guard_expression = GuardExpressionAst([path.cond_veri])
+			
 
 			cont_var_updater = guard_expression.parse_any_all_new(
 				cont_var_dict_template, discrete_variable_dict, length_dict
@@ -1039,13 +1047,13 @@ class Verifier:
 		guard_hit = False
 		reduction_rate = trace_length #10
 
-		reduction_queue = [] #[(0, trace_length, trace_length)]
+		reduction_queue = [(0,1,1)] #[(0, trace_length, trace_length)]
 		# for idx, end_idx,combine_len in reduction_queue:
 		hits = []
 		#print(reduction_queue)
 		#add segments of length 1 to queue for now
 		#KB: todo check for off by one error
-		reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
+		#reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
 		#import pdb; pdb.set_trace()
 		while reduction_queue:
 			idx, end_idx, combine_len = reduction_queue.pop()
@@ -1111,14 +1119,15 @@ class Verifier:
 									print("start_time", node.start_time)
 								asserts[agent_id].append(label)
 							else:
-								new_len = int(np.ceil(combine_len / reduction_rate))
-								next_list = [
-									(i, min(i + new_len, end_idx), new_len)
-									for i in range(idx, end_idx, new_len)
-								]
-								reduction_queue.extend(next_list[::-1])
-								reduction_needed = True
-								break
+								#new_len = int(np.ceil(combine_len / reduction_rate))
+								#next_list = [
+								#	(i, min(i + new_len, end_idx), new_len)
+								#	for i in range(idx, end_idx, new_len)
+								#]
+								#breakpoint()
+								if end_idx < trace_length - 1:
+									reduction_queue.extend([(end_idx, end_idx+1, 1)])
+								#reduction_needed = True
 				if reduction_needed:
 					break
 				if agent_id in asserts:
@@ -1129,6 +1138,7 @@ class Verifier:
 				unchecked_cache_guards = [
 					g[:-1] for g in cached_guards[agent_id] if g[-1] < idx
 				]  # FIXME: off by 1?
+				#breakpoint()
 				for guard_expression, continuous_variable_updater, discrete_variable_dict, path in (
 					agent_guard_dict[agent_id] + unchecked_cache_guards
 				):
@@ -1143,6 +1153,7 @@ class Verifier:
 					)
 					if not guard_can_satisfied:
 						continue
+					#breakpoint()
 					guard_satisfied, is_contained = one_step_guard.evaluate_guard_cont(
 						agent, new_cont_var_dict, track_map
 					)
@@ -1150,6 +1161,8 @@ class Verifier:
 						any_contained = any_contained or is_contained
 					# TODO: Can we also store the cont and disc var dict so we don't have to call sensor again?
 					if guard_satisfied and combine_len == 1:
+						breakpoint()
+						#KB not getting in here!!!!
 						#print("entered guard statisfied")
 						reset_expr = ResetExpression((path.var, path.val_veri))
 						resets[reset_expr.var].append(
@@ -1170,6 +1183,10 @@ class Verifier:
 						reduction_queue.extend(next_list[::-1])
 						reduction_needed = True
 						break
+					#elif not guard_satisfied:
+					#	if end_idx < trace_length - 1:
+					#		reduction_queue.extend([(end_idx, end_idx+1, 1)])
+					#		continue
 				if reduction_needed:
 					break
 				if combine_len == 1:
@@ -1177,6 +1194,7 @@ class Verifier:
 					combined_reset_list = list(itertools.product(*resets.values()))
 					if len(combined_reset_list) == 1 and combined_reset_list[0] == ():
 						continue
+					#breakpoint()
 					for i in range(len(combined_reset_list)):
 						# Compute reset_idx
 						reset_idx = []
@@ -1184,12 +1202,14 @@ class Verifier:
 							reset_idx.append(reset_info[3])
 						# a list of reset expression
 						hits.append((agent_id, tuple(reset_idx), combined_reset_list[i]))
-
-			if reduction_needed or combine_len > 1:
-				continue
+			#if reduction_needed or combine_len > 1:
+			#	break
 			if len(asserts) > 0:
 				return (asserts, idx), None
+			breakpoint()
+			#KB HERE is where idx gets to 1999
 			if hits != []:
+				breakpoint()
 				guard_hits.append((hits, state_dict, idx))
 				guard_hit = True
 			elif guard_hit:
@@ -1198,8 +1218,10 @@ class Verifier:
 				break
 
 		reset_dict = {}  # defaultdict(lambda: defaultdict(list))
+		#breakpoint()
 		for hits, all_agent_state, hit_idx in guard_hits:
 			for agent_id, reset_idx, reset_list in hits:
+				#breakpoint()
 				# TODO: Need to change this function to handle the new reset expression and then I am done
 				dest_list, reset_rect = Verifier.apply_reset(
 					node.agent[agent_id], reset_list, all_agent_state, track_map
@@ -1225,10 +1247,13 @@ class Verifier:
 		# Combine reset rects and construct transitions
 
 		count = 0
+		#breakpoint()
 		for agent in reset_dict:
 			for reset_idx in reset_dict[agent]:
 				for dest in reset_dict[agent][reset_idx]:
 					#output.x output.vx
+					#KB likely here is where reset is applied??
+					#breakpoint()
 					reset_data = tuple(map(list, zip(*reset_dict[agent][reset_idx][dest])))
 					paths = [r[-1] for r in reset_data[-1]]
 					transition = (agent, node.mode[agent], dest, *reset_data[:-1], paths)
@@ -1347,7 +1372,7 @@ class Verifier:
 							state[i] = result
 					return state
 				print("TODO: find where/when this gets set elsewhere")
-				new_state[1].apply_reset(reset_func)
+				new_state[1] = new_state[1].apply_reset(reset_func)
 
 
 		all_dest = itertools.product(*possible_dest)

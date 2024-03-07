@@ -368,7 +368,7 @@ class StarSet:
                 b_ub=self.g, 
                 bounds=(None, None))
         max = self.center[i] + (coefficents @ res.x)
-        return (min, max)
+        return min, max
 
 
 #    '''
