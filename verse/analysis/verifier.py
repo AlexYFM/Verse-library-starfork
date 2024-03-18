@@ -1045,15 +1045,15 @@ class Verifier:
         # pp(("trace len", trace_length, {a: len(t) for a, t in node.trace.items()}))
         guard_hits = []
         guard_hit = False
-        reduction_rate = trace_length #10
+        reduction_rate = 10
 
-        reduction_queue = [] #[(0,1,1)] #[(0, trace_length, trace_length)]
+        reduction_queue = [(0, trace_length, trace_length)] #[(0,1,1)] #[(0, trace_length, trace_length)]
         # for idx, end_idx,combine_len in reduction_queue:
         hits = []
         #print(reduction_queue)
         #add segments of length 1 to queue for now
         #KB: todo check for off by one error
-        reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
+        #reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
         #import pdb; pdb.set_trace()
         while reduction_queue:
             #breakpoint()
@@ -1065,7 +1065,7 @@ class Verifier:
             #print(idx)
             state_dict = {
                 aid: (
-                    node.trace[aid][idx],
+                    node.trace[aid][idx: end_idx],
                     #combine_rect(node.trace[aid][idx * 2 : end_idx * 2]),
                     node.mode[aid],
                     node.static[aid],
@@ -1121,19 +1121,20 @@ class Verifier:
                                     print("index", idx)
                                     print("start_time", node.start_time)
                                 asserts[agent_id].append(label)
-                        #else:
+                        else:
                                 #print("here")
-                                #new_len = int(np.ceil(combine_len / reduction_rate))
-                                #next_list = [
-                                #    (i, min(i + new_len, end_idx), new_len)
-                                #    for i in range(idx, end_idx, new_len)
-                                #]
+                                new_len = int(np.ceil(combine_len / reduction_rate))
+                                next_list = [
+                                    (i, min(i + new_len, end_idx), new_len)
+                                    for i in range(idx, end_idx, new_len)
+                                ]
                                 #breakpoint()
                                 #if not added_next:
                                 #    if end_idx < trace_length - 1:
                                 #        reduction_queue.extend([(end_idx, end_idx+1, 1)])
                                 #    added_next = True
-                                #reduction_needed = True
+                                reduction_queue.extend(next_list[::-1])
+                                reduction_needed = True
                 if reduction_needed:
                     break
                 if agent_id in asserts:
@@ -1208,8 +1209,8 @@ class Verifier:
                             reset_idx.append(reset_info[3])
                         # a list of reset expression
                         hits.append((agent_id, tuple(reset_idx), combined_reset_list[i]))
-            #if reduction_needed or combine_len > 1:
-            #    break
+            if reduction_needed or combine_len > 1:
+                continue
             if len(asserts) > 0:
                 return (asserts, idx), None
             #breakpoint()
