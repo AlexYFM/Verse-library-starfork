@@ -1047,7 +1047,14 @@ class Verifier:
         guard_hit = False
         reduction_rate = 10
 
-        reduction_queue = [(0, trace_length, trace_length)] #[(0,1,1)] #[(0, trace_length, trace_length)]
+        reduction_queue = [] #[(0, trace_length, trace_length)] #[(0,1,1)] #[(0, trace_length, trace_length)]
+        new_len = 1 #int(np.ceil(trace_length / 100))
+        next_list = [
+                    (i, min(i + new_len, trace_length), new_len)
+                    for i in range(0, trace_length, new_len)
+                    ]
+        reduction_queue.extend(next_list)
+        print(reduction_queue)
         # for idx, end_idx,combine_len in reduction_queue:
         hits = []
         #print(reduction_queue)
@@ -1057,7 +1064,7 @@ class Verifier:
         #import pdb; pdb.set_trace()
         while reduction_queue:
             #breakpoint()
-            idx, end_idx, combine_len = reduction_queue.pop()
+            idx, end_idx, combine_len = reduction_queue.pop(0)
             reduction_needed = False
             # print((idx, combine_len))
             any_contained = False

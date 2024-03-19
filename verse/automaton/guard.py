@@ -169,8 +169,23 @@ class GuardExpressionAst:
         #construct the border of the hyperrectangle at a specific time
         #hyperrectangle = reach(t)
         #breakpoint()
+        #print(agent_states)
+        num_stars = 0
         for agent in agent_states.keys():
-            agent_states[agent].add_constraints(cur_solver, agent_vars[agent], agent)
+            num_stars = len(agent_states[agent])
+        state_constraints = []
+        for state_idx in range(0, num_stars):
+            agent_constraints = []
+            for agent in agent_states.keys():
+                constraints = agent_states[agent][state_idx].return_contraints(agent_vars[agent], agent)
+                agent_constraints.append(z3.And(constraints))
+            state_constraints.append(z3.And(agent_constraints))
+        union_constraint = z3.Or(state_constraints)
+        if len(state_constraints) == 1:
+            union_constraint = state_constraints[0]
+
+        cur_solver.add(union_constraint)
+        #print(cur_solver)
         #guard \cap hyperrectangle =/= empty set
         # if false, then they are disjoint
         #breakpoint()
@@ -185,8 +200,10 @@ class GuardExpressionAst:
             tmp_solver.add(Not(cur_solver.assertions()[0]))
            
            #KB todo faster way to add a second time without recomputing
-            for agent in agent_states.keys():
-                agent_states[agent].add_constraints(tmp_solver, agent_vars[agent], agent)
+            tmp_solver.add(union_constraint)
+
+            #for agent in agent_states.keys():
+            #    agent_states[agent].add_constraints(tmp_solver, agent_vars[agent], agent)
             #check if all starset in guard
             if tmp_solver.check() == unsat:
                 is_contained = True
@@ -441,18 +458,19 @@ class GuardExpressionAst:
                                 var = elt.id
                             else:
                                 raise ValueError(f"Node type {type(elt)} is not supported")
+                            #TODO: indicate index!
                             agent_star = cont_var_dict[var]
-                            index = -1
+                            #index = -1
                             #breakpoint()
-                            for var_set in agent_vars.values():
-                                var_set_str = [str(x) for x in var_set]
-                                if var in var_set_str:
-                                    index = var_set_str.index(var)
-                            min, max = agent_star.get_max_min(index)
+                            #for var_set in agent_vars.values():
+                            #    var_set_str = [str(x) for x in var_set]
+                            #    if var in var_set_str:
+                            #        index = var_set_str.index(var)
+                            #min, max = agent_star.get_max_min(index)
                             #KB is this pointless?? did we need to adjust the star differently?
-                            arg1_lower.append(min)
-                            arg1_upper.append(max)
-                        vehicle_pos = (arg1_lower, arg1_upper)
+                            #arg1_lower.append(min)
+                            #arg1_upper.append(max)
+                        #vehicle_pos = (arg1_lower, arg1_upper)
 
                         # Get corresponding lane segments with respect to the set of vehicle pos
                         lane_seg1 = track_map.get_lane_segment(vehicle_lane, arg1_lower)
@@ -526,6 +544,10 @@ class GuardExpressionAst:
             ) + max(delta0[1] * lane_seg.direction[1], delta1[1] * lane_seg.direction[1])
             longitudinal_low += lane_seg.longitudinal_start
             longitudinal_high += lane_seg.longitudinal_start
+
+
+
+
 
             assert longitudinal_high >= longitudinal_low
             return longitudinal_low, longitudinal_high

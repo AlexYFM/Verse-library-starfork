@@ -245,7 +245,38 @@ class StarSet:
         return False
         #print(cur_solver.model())
 
-    
+    def return_contraints(self, state_vec, agent):
+        #print("checking guards")
+        #breakpoint()
+        #state vec contains the list of z3 variables for the state in the order of the state vectors for the star set
+        #rest is same as above but change point to state vec
+        #create alpha vars
+        alpha = [ Real("%s_alpha_%s" % (agent, (j+1))) for j in range(len(self.basis)) ]
+        #create state vars
+        #state_vec = [ Real("state_%s" % (j+1)) for j in range(len(self.center)) ] 
+        #add the equality constraint
+        #x = x_0 + sum of alpha*
+        constraints = []
+        mat = self.center + (self.basis @ alpha)
+        for i in range(0, len(mat)):
+            constraints.append(mat[i] == state_vec[i])
+        #for j in range(len(state_vec)):
+        #    new_eq = self.center[j]
+        #    for i in range(len(self.basis)):
+        #        #take the sum of alpha_i times the jth index of each basis
+        #        new_eq = new_eq + (alpha[i]*self.basis[i][j])
+        #    cur_solver.add(new_eq == state_vec[j])
+
+        #add the constraint on alpha
+        for i in range(len(self.C)):
+            new_eq = 0
+            for j in range(len(alpha)):
+                new_eq = new_eq + (self.C[i][j] * alpha[j])
+            constraints.append(new_eq <= self.g[i])
+        #print(cur_solver)
+        return constraints
+
+
     def add_constraints(self, cur_solver, state_vec, agent):
         #print("checking guards")
         #breakpoint()
