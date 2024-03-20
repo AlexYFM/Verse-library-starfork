@@ -1047,16 +1047,17 @@ class Verifier:
 		guard_hit = False
 		reduction_rate = trace_length #10
 
-		reduction_queue = [(0,1,1)] #[(0, trace_length, trace_length)]
+		reduction_queue = [] #[(0, trace_length, trace_length)]
 		# for idx, end_idx,combine_len in reduction_queue:
 		hits = []
 		#print(reduction_queue)
 		#add segments of length 1 to queue for now
 		#KB: todo check for off by one error
-		#reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
+		reduction_queue = [(i, i+1, 1) for i in range(0, trace_length)]
 		#import pdb; pdb.set_trace()
+		print(reduction_queue)
 		while reduction_queue:
-			idx, end_idx, combine_len = reduction_queue.pop()
+			idx, end_idx, combine_len = reduction_queue.pop(0)
 			reduction_needed = False
 			# print((idx, combine_len))
 			any_contained = False
@@ -1161,7 +1162,7 @@ class Verifier:
 						any_contained = any_contained or is_contained
 					# TODO: Can we also store the cont and disc var dict so we don't have to call sensor again?
 					if guard_satisfied and combine_len == 1:
-						breakpoint()
+						#breakpoint()
 						#KB not getting in here!!!!
 						#print("entered guard statisfied")
 						reset_expr = ResetExpression((path.var, path.val_veri))
@@ -1206,10 +1207,10 @@ class Verifier:
 			#	break
 			if len(asserts) > 0:
 				return (asserts, idx), None
-			breakpoint()
+			#breakpoint()
 			#KB HERE is where idx gets to 1999
 			if hits != []:
-				breakpoint()
+				#breakpoint()
 				guard_hits.append((hits, state_dict, idx))
 				guard_hit = True
 			elif guard_hit:

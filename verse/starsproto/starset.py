@@ -257,7 +257,7 @@ class StarSet:
         #state_vec = [ Real("state_%s" % (j+1)) for j in range(len(self.center)) ] 
         #add the equality constraint
         #x = x_0 + sum of alpha*
-        mat = self.center + (self.basis @ alpha)
+        mat = self.center + (self.basis.transpose() @ alpha)
         for i in range(0, len(mat)):
             cur_solver.add(mat[i] == state_vec[i])
         #for j in range(len(state_vec)):
