@@ -78,7 +78,7 @@ scenario.add_agent(car2)
 
 scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
 
-traces_veri = scenario.verify(10, 0.5)
+traces_veri = scenario.verify(20, 0.01)
 #traces_veri = scenario.verify(20, 0.01)
 
 
