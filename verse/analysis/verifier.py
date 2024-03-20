@@ -1047,22 +1047,20 @@ class Verifier:
 		guard_hit = False
 		reduction_rate = trace_length #10
 
-		reduction_queue = [] #[(0,1,1)] #[(0, trace_length, trace_length)]
+		reduction_queue = [(0,1,1)] #[(0, trace_length, trace_length)]
 		# for idx, end_idx,combine_len in reduction_queue:
 		hits = []
 		#print(reduction_queue)
 		#add segments of length 1 to queue for now
 		#KB: todo check for off by one error
-		reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
+		#reduction_queue.extend([(i, i+1, 1) for i in range(0, trace_length-1)])
 		#import pdb; pdb.set_trace()
 		while reduction_queue:
-			#breakpoint()
 			idx, end_idx, combine_len = reduction_queue.pop()
 			reduction_needed = False
 			# print((idx, combine_len))
 			any_contained = False
 			# end_idx = min(idx+combine_len, trace_length)
-			#print(idx)
 			state_dict = {
 				aid: (
 					node.trace[aid][idx],
@@ -1092,7 +1090,6 @@ class Verifier:
 				cont_vars, disc_vars, len_dict = sensor.sense(agent, state_dict, track_map)
 				resets = defaultdict(list)
 				# Check safety conditions
-				#added_next = False
 				for i, a in enumerate(agent.decision_logic.asserts_veri):
 					#breakpoint()
 					pre_expr = a.pre
@@ -1121,18 +1118,15 @@ class Verifier:
 									print("index", idx)
 									print("start_time", node.start_time)
 								asserts[agent_id].append(label)
-						#else:
-								#print("here")
+							else:
 								#new_len = int(np.ceil(combine_len / reduction_rate))
 								#next_list = [
 								#	(i, min(i + new_len, end_idx), new_len)
 								#	for i in range(idx, end_idx, new_len)
 								#]
 								#breakpoint()
-								#if not added_next:
-								#	if end_idx < trace_length - 1:
-								#		reduction_queue.extend([(end_idx, end_idx+1, 1)])
-								#	added_next = True
+								if end_idx < trace_length - 1:
+									reduction_queue.extend([(end_idx, end_idx+1, 1)])
 								#reduction_needed = True
 				if reduction_needed:
 					break
@@ -1148,18 +1142,18 @@ class Verifier:
 				for guard_expression, continuous_variable_updater, discrete_variable_dict, path in (
 					agent_guard_dict[agent_id] + unchecked_cache_guards
 				):
-					#breakpoint()
 					#KB working: not getting in here? agent_guard_dict??
 					assert isinstance(path, ModePath)
 					new_cont_var_dict = copy.deepcopy(cont_vars)
 					one_step_guard: GuardExpressionAst = copy.deepcopy(guard_expression)
-					#KB print("RESET STARTS HERE?????")
+					#print("RESET STARTS HERE?????")
 					Verifier.apply_cont_var_updater(new_cont_var_dict, continuous_variable_updater)
 					guard_can_satisfied = one_step_guard.evaluate_guard_hybrid(
 						agent, discrete_variable_dict, new_cont_var_dict, track_map
 					)
 					if not guard_can_satisfied:
 						continue
+					#breakpoint()
 					guard_satisfied, is_contained = one_step_guard.evaluate_guard_cont(
 						agent, new_cont_var_dict, track_map
 					)
@@ -1167,7 +1161,7 @@ class Verifier:
 						any_contained = any_contained or is_contained
 					# TODO: Can we also store the cont and disc var dict so we don't have to call sensor again?
 					if guard_satisfied and combine_len == 1:
-						#breakpoint()
+						breakpoint()
 						#KB not getting in here!!!!
 						#print("entered guard statisfied")
 						reset_expr = ResetExpression((path.var, path.val_veri))
@@ -1192,7 +1186,7 @@ class Verifier:
 					#elif not guard_satisfied:
 					#	if end_idx < trace_length - 1:
 					#		reduction_queue.extend([(end_idx, end_idx+1, 1)])
-					#		break
+					#		continue
 				if reduction_needed:
 					break
 				if combine_len == 1:
@@ -1212,19 +1206,14 @@ class Verifier:
 			#	break
 			if len(asserts) > 0:
 				return (asserts, idx), None
-			#breakpoint()
+			breakpoint()
 			#KB HERE is where idx gets to 1999
 			if hits != []:
-				#breakpoint()
+				breakpoint()
 				guard_hits.append((hits, state_dict, idx))
 				guard_hit = True
 			elif guard_hit:
 				break
-			#if not guard_hit:
-			#	#if not added_next:
-			#	if end_idx < trace_length - 1:
-			#		reduction_queue.extend([(end_idx, end_idx+1, 1)])
-								#	added_next = True
 			if any_contained:
 				break
 
