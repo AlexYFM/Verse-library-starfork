@@ -609,7 +609,7 @@ class Verifier:
 
 			truncated_trace = {}
 			for agent_idx in node.agent:
-				truncated_trace[agent_idx] = node.trace[agent_idx][start_idx * 2 :]
+				truncated_trace[agent_idx] = node.trace[agent_idx][start_idx :]
 			if end_idx > max_end_idx:
 				max_end_idx = end_idx
 
@@ -621,8 +621,7 @@ class Verifier:
 			next_node_uncertain_param = node.uncertain_param
 			next_node_mode[transit_agent_idx] = dest_mode
 			next_node_agent = node.agent
-			print("HERE!!")
-			#print(truncated_trace)
+
 			next_node_start_time = list(truncated_trace.values())[0][0][0]
 			next_node_init = {}
 			next_node_trace = {}
@@ -630,7 +629,9 @@ class Verifier:
 				if agent_idx == transit_agent_idx:
 					next_node_init[agent_idx] = next_init
 				else:
+					#KB note: this may be incorrect
 					next_node_init[agent_idx] = [
+						#truncated_trace[agent_idx][0]
 						[truncated_trace[agent_idx][0][1:], truncated_trace[agent_idx][1][1:]]
 					]
 					# pp(("infer init", agent_idx, next_node_init[agent_idx]))
@@ -1055,7 +1056,7 @@ class Verifier:
 		#KB: todo check for off by one error
 		reduction_queue = [(i, i+1, 1) for i in range(0, trace_length)]
 		#import pdb; pdb.set_trace()
-		print(reduction_queue)
+		#print(reduction_queue)
 		while reduction_queue:
 			idx, end_idx, combine_len = reduction_queue.pop(0)
 			reduction_needed = False

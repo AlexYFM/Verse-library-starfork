@@ -55,6 +55,7 @@ def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
     while queue != []:
         node = queue.pop(0)
         traces = node.trace
+        print(traces)
         trace = np.array(traces[agent_id])
         #plot the trace
         for i in range(0, len(trace)):
