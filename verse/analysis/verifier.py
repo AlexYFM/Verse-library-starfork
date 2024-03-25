@@ -550,7 +550,7 @@ class Verifier:
 		if not config.unsafe_continue and asserts != None:
 			asserts, idx = asserts
 			for agent in node.agent:
-				node.trace[agent] = node.trace[agent][: (idx + 1) * 2]
+				node.trace[agent] = node.trace[agent][: (idx + 1)]
 			return (
 				node.id,
 				later,
@@ -650,7 +650,7 @@ class Verifier:
 		"""Only truncate when there's transitions"""
 		if all_possible_transitions:
 			for agent_idx in node.agent:
-				node.trace[agent_idx] = node.trace[agent_idx][: (max_end_idx + 1) * 2]
+				node.trace[agent_idx] = node.trace[agent_idx][: (max_end_idx + 1)]
 		return (
 			node.id,
 			later,
