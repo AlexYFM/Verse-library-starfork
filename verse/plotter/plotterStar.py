@@ -55,20 +55,24 @@ def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
     while queue != []:
         node = queue.pop(0)
         traces = node.trace
-        trace = np.array(traces[agent_id])
-        #plot the trace
-        for i in range(0, len(trace)):
-            #trace[i][1].show()
-            #print(trace[i][1])
-            x, y = np.array(trace[i][1].get_verts())
-            #print(verts)
-            #x=[verts[:,0]]
-            #print(x)
-            #y=[verts[:,1]]
-            #print(y)
-            plt.plot(x, y, lw = 1, color = color)
-            #plt.show()
-        queue += node.child
+        #print(traces)
+        if agent_id in traces.keys():
+            trace = np.array(traces[agent_id])
+            #plot the trace
+            for i in range(0, len(trace)):
+                #trace[i][1].show()
+                #print(trace[i][1])
+                x, y = np.array(trace[i][1].get_verts())
+                #print(verts)
+                #x=[verts[:,0]]
+                #print(x)
+                #y=[verts[:,1]]
+                #print(y)
+                plt.plot(x, y, lw = 1, color = color)
+                #plt.show()
+            queue += node.child
+        else:
+            print("KB: concerning issue, where is an agent??")
 
 
 

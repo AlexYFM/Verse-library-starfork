@@ -56,22 +56,44 @@ if __name__ == "__main__":
     #4. initializing the agents for this scenario.
     #   Note that agents are only initialized *in* a scenario, not individually outside a scenario
     #5. genetating the simulation traces or computing the reachable states
+    from verse.scenario import Scenario, ScenarioConfig
+    from verse.analysis import ReachabilityMethod
+    from verse.starsproto.starset import StarSet
+    import polytope as pc
+    initial_set_polytope_1 = pc.box2poly([[5,15], [10,10], [2,2], [2,2]])
+    initial_set_polytope_2 = pc.box2poly([[15,15], [1,1], [1,1], [-2,-2]])
+
     bouncingBall = Scenario(ScenarioConfig(parallel=False))  # scenario too small, parallel too slow
     BALL_CONTROLLER = "./demo/ball/ball_bounces.py"
     myball1 = BallAgent("red-ball", file_name=BALL_CONTROLLER)
+    myball1.set_initial(StarSet.from_polytope(initial_set_polytope_1), (BallMode.NORMAL,))
     myball2 = BallAgent("green-ball", file_name=BALL_CONTROLLER)
+    myball2.set_initial(StarSet.from_polytope(initial_set_polytope_2), (BallMode.NORMAL,))
+
     bouncingBall.add_agent(myball1)
     bouncingBall.add_agent(myball2)
-    bouncingBall.set_init(
-        [[[5, 10, 2, 2], [5, 10, 2, 2]], [[15, 1, 1, -2], [15, 1, 1, -2]]],
-        [(BallMode.NORMAL,), (BallMode.NORMAL,)],
-    )
+    
+
+    #bouncingBall.set_init(
+    #    [StarSet.from_polytope(initial_set_polytope_1), StarSet.from_polytope(initial_set_polytope_2)],
+    #    [(BallMode.NORMAL,), (BallMode.NORMAL,)],
+    #)
+
+    bouncingBall.config.reachability_method = ReachabilityMethod.STAR_SETS
+
     # TODO: We should be able to initialize each of the balls separately
     # this may be the cause for the VisibleDeprecationWarning
     # TODO: Longer term: We should initialize by writing expressions like "-2 \leq myball1.x \leq 5"
     # "-2 \leq myball1.x + myball2.x \leq 5"
-    traces = bouncingBall.simulate_simple(40, 0.01, 6)
+    #traces = bouncingBall.simulate_simple(40, 0.01, 6)
     # TODO: There should be a print({traces}) function
-    fig = go.Figure()
-    fig = simulation_tree(traces, None, fig, 1, 2, [1, 2], "fill", "trace")
-    fig.show()
+    #fig = go.Figure()
+    #fig = simulation_tree(traces, None, fig, 1, 2, [1, 2], "fill", "trace")
+    #fig.show()
+    traces_veri = bouncingBall.verify(20, 0.01, 6)
+
+
+    import plotly.graph_objects as go
+    from verse.plotter.plotterStar import *
+
+    plot_reachtube_stars(traces_veri, None, 0 , 1)

@@ -116,7 +116,7 @@ class StarSet:
     given a reset function, this will construct a new star set
     '''
     def apply_reset(self, reset_function):
-        print("YES WE ARE APPLYING A RESET")
+        #print("YES WE ARE APPLYING A RESET")
         new_center = reset_function(self.center)
         new_basis = np.empty_like(self.basis)
         for i in range(0, len(self.basis)):
