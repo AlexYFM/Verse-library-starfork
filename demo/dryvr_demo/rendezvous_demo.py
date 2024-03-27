@@ -21,15 +21,26 @@ if __name__ == "__main__":
     scenario.add_agent(car)
     scenario.set_sensor(CraftSensor())
     # modify mode list input
+
+    from verse.starsproto.starset import StarSet
+    import polytope as pc
+
+    initial_set_polytope_1 = pc.box2poly([[-925,-875], [-425,-375], [0,0], [0,0], [0,0], [0,0]])
+
     scenario.set_init(
         [
-            [[-925, -425, 0, 0, 0, 0], [-875, -375, 0, 0, 0, 0]],
+            StarSet.from_polytope(initial_set_polytope_1)
         ],
         [
             tuple([CraftMode.ProxA]),
         ],
     )
     traces = scenario.verify(200, 1)
-    fig = go.Figure()
-    fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
-    fig.show()
+    #fig = go.Figure()
+    #fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
+    #fig.show()
+
+    import plotly.graph_objects as go
+    from verse.plotter.plotterStar import *
+
+    plot_reachtube_stars(traces, None, 0 , 1)

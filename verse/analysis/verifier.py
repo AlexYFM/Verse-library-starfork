@@ -337,7 +337,8 @@ class Verifier:
 		#fix this!
 		#print("TODO: is the initial set correct?")
 		#print(initial_set)
-		inital_star = initial_set[0][1]
+		breakpoint()
+		inital_star = initial_set[0][0]
 
 		#KB: task - why isn't initial star in reach tube
 		reach_tube = inital_star.calc_reach_tube(
@@ -1297,7 +1298,7 @@ class Verifier:
 		ego_type = find(agent.decision_logic.args, lambda a: a.name == EGO).typ
 
 
-		new_state = [agent_state[0], agent_state[1].copy()] #copy.deepcopy([agent_state[0][1:], agent_state[1][1:]])
+		new_state =  agent_state[1].starcopy() #copy.deepcopy([agent_state[0][1:], agent_state[1][1:]])
 
 		# The reset_list here are all the resets for a single transition. Need to evaluate each of them
 		# and then combine them together
@@ -1337,7 +1338,6 @@ class Verifier:
 			# Assume linear function for continuous variables
 			else:
 				#agent_state.continuous_reset(reset_variable, expr, agent, ego_type,cont_var_dict, rect)
-				print("in the else")
 				lhs = reset_variable
 				rhs = expr
 				found = False
@@ -1358,31 +1358,36 @@ class Verifier:
 				#TODO fix the fact that the equation has x instead of ego.x
 
 
-				print(statevec)
+				#print(statevec)
 
 				#concern: how to handle the case where you need other agents state. for now: assume you do not
 				def reset_func(state): #[ego.x, ego.y, ...]
+					output = np.copy(state)
 					val_dict = {}
 					tmp_exp = copy.deepcopy(expr)
 					for i in range(0, len(state)):
 						if statevec[i] in tmp_exp:
 							tmp_exp = tmp_exp.replace(statevec[i], str(state[i]))
-					print(tmp_exp)
+					#print(tmp_exp)
 					result = eval(tmp_exp, {}, val_dict)
 					for i in range(0, len(state)):
 						if lhs in statevec[i]:
-							state[i] = result
-					return state
-				print("TODO: find where/when this gets set elsewhere")
-				new_state[1] = new_state[1].apply_reset(reset_func)
+							output[i] = result
+					return output
+				#print("TODO: find where/when this gets set elsewhere")
+				#breakpoint()
+				#print("foo")
+				new_state = new_state.apply_reset(reset_func)
+				#print("bar")
+				#breakpoint()
 
 
 		all_dest = itertools.product(*possible_dest)
 		dest = []
 		for tmp in all_dest:
 			dest.append(tmp)
-
-		return dest, new_state
+		breakpoint()
+		return dest, [new_state]
 
 	@staticmethod
 	def _get_combinations(symbols, cont_var_dict):

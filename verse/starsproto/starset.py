@@ -56,6 +56,8 @@ class StarSet:
         self.C = np.copy(C)
         self.g = np.copy(g)
 
+    def starcopy(self):
+        return StarSet(self.center, self.basis, self.C, self.g)
 
     def superposition(self, new_center, new_basis):
         """
@@ -117,6 +119,8 @@ class StarSet:
     '''
     def apply_reset(self, reset_function):
         #print("YES WE ARE APPLYING A RESET")
+        #center = np.copy(self.center)
+        #basis = np.copy(self.basis)
         new_center = reset_function(self.center)
         new_basis = np.empty_like(self.basis)
         for i in range(0, len(self.basis)):
@@ -299,12 +303,21 @@ class StarSet:
         verts = []
         x_pts = []
         y_pts = []
+        extra_dims_ct = len(stateset.center) - 2
+        zeros = []
+        for i in range(0, extra_dims_ct):
+            zeros.append([0])
         # sample the angles from 0 to 2pi, 100 samples
         for angle in np.linspace(0, 2*np.pi, 100):
             x_component = np.cos(angle)
             y_component = np.sin(angle)
             #TODO: needs to work for 3d and any dim of non-graphed state
-            direction = np.array([[x_component], [y_component], [0], [0]])
+            direction = [[x_component], [y_component]]
+            direction.extend(zeros)
+            direction = np.array(direction)
+            #for i in range(0, extra_dims_ct):
+            #    direction.append([0])
+            #direction.extend(zeros)
 
             pt = stateset.maximize(direction)
 

@@ -15,12 +15,13 @@ def plot_reachtube_stars(
     root: Union[AnalysisTree, AnalysisTreeNode],
     map=None,
     x_dim: int = 0,
-    y_dim: int = 1
+    y_dim: int = 1,
+    filter: int = 100
 ):
     print("graphing")
     if isinstance(root, AnalysisTree):
         root = root.root
-    root = sample_trace(root, 100)
+    root = sample_trace(root, filter)
     agent_list = list(root.agent.keys())
     i = 0
     for agent_id in agent_list:

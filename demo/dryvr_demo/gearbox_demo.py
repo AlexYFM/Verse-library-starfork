@@ -20,7 +20,7 @@ if __name__ == "__main__":
     import polytope as pc
 
     input_code_name = "./demo/dryvr_demo/sleeve_controller.py"
-    config = ScenarioConfig(init_seg_length=1)
+    config = ScenarioConfig(init_seg_length=1, parallel=False)
     scenario = Scenario(config=config, )
 
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
@@ -32,13 +32,14 @@ if __name__ == "__main__":
     car.set_initial(StarSet.from_polytope(initial_set_polytope_1), tuple([AgentMode.Free]))
     scenario.add_agent(car)
 
-    traces = scenario.verify(0.2, 0.00001)
+    traces = scenario.verify(0.2, 0.01)
+    #traces = scenario.verify(0.2, 0.01)
 
     
     import plotly.graph_objects as go
     from verse.plotter.plotterStar import *
 
-    plot_reachtube_stars(traces, None, 0 , 1)
+    plot_reachtube_stars(traces, None, 0 , 1, filter = 3)
 
     #traces.dump("./demo/gearbox/output.json")
     #fig = go.Figure()
