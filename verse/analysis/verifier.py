@@ -337,8 +337,8 @@ class Verifier:
 		#fix this!
 		#print("TODO: is the initial set correct?")
 		#print(initial_set)
-		breakpoint()
-		inital_star = initial_set[0][0]
+		#breakpoint()
+		inital_star = initial_set[0]
 
 		#KB: task - why isn't initial star in reach tube
 		reach_tube = inital_star.calc_reach_tube(
@@ -624,6 +624,10 @@ class Verifier:
 			next_node_agent = node.agent
 
 			next_node_start_time = list(truncated_trace.values())[0][0][0]
+			#added_inits = []
+			#for init in next_init:
+			#	if not init in added_inits:
+					#added_inits.append(init)
 			next_node_init = {}
 			next_node_trace = {}
 			for agent_idx in next_node_agent:
@@ -1306,6 +1310,7 @@ class Verifier:
 			reset, disc_var_dict, cont_var_dict, _, _p = reset_tuple
 			reset_variable = reset.var
 			expr = reset.expr
+			#breakpoint()
 
 			# First get the transition destinations
 			if "mode" in reset_variable:
@@ -1386,7 +1391,7 @@ class Verifier:
 		dest = []
 		for tmp in all_dest:
 			dest.append(tmp)
-		breakpoint()
+		#breakpoint()
 		return dest, [new_state]
 
 	@staticmethod
