@@ -30,7 +30,7 @@ class vanderpol_agent(BaseAgent):
         t = [round(i * time_step, 10) for i in range(0, number_points)]
         # note: digit of time
         init = initialCondition
-        trace = [[0] + init]
+        trace = [[0] + init.tolist()]
         for i in range(len(t)):
             r = ode(self.dynamic)
             r.set_initial_value(init)
@@ -184,7 +184,7 @@ class craft_agent(BaseAgent):
         t = [round(i * time_step, 10) for i in range(0, number_points)]
 
         init = initialCondition
-        trace = [[0] + init]
+        trace = [[0] + init.tolist()]
         for i in range(len(t)):
             r = self.action_handler(mode[0])
             r.set_initial_value(init)

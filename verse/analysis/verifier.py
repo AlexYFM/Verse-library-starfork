@@ -306,31 +306,26 @@ class Verifier:
 		else:
 			tube_length = res_tube.shape[0]
 		#What is this and why does the same star set appear twice?    
-		#print(missing_seg_idx_list)
-		combine = False
-		if combine:
-			for combine_seg_idx in missing_seg_idx_list:
-				#for item in initial_set:
-					#print(item)
-					#for star in item:
-						#print(star)
-						#star.show()
-				#print(initial_set)
-				#print("done with init set")
-				rect_seg = initial_set[combine_seg_idx : combine_seg_idx + combine_seg_length]
-				#print(rect_seg)
-				#print("done with rect seg")
-				combined_rect = None
-				for rect in rect_seg:
-					rect = np.array(rect)
-					if combined_rect is None:
-						combined_rect = rect
-					else:
-						combined_rect[0, :] = np.minimum(combined_rect[0, :], rect[0, :])
-						combined_rect[1, :] = np.maximum(combined_rect[1, :], rect[1, :])
-				combined_rect = combined_rect.tolist()
-				print(combined_rect)
-				print("done with combined rec")
+		print(missing_seg_idx_list)
+
+		for combine_seg_idx in missing_seg_idx_list:
+			rect_seg = initial_set[combine_seg_idx : combine_seg_idx + combine_seg_length]
+			print("len of rect_sec:")
+			print(len(rect_seg))
+			#combined_rect = None
+			#for rect in rect_seg:
+			#	rect = np.array(rect)
+			#	if combined_rect is None:
+			#		combined_rect = rect
+			#	else:
+			#		combined_rect[0, :] = np.minimum(combined_rect[0, :], rect[0, :])
+			#		combined_rect[1, :] = np.maximum(combined_rect[1, :], rect[1, :])
+			from verse.starsproto.starset import StarSet
+			combined_star = initial_set[0]
+			if len(rect_seg) > 1:
+				combined_star = StarSet.combine_stars(rect_seg)
+			#print(combined_rect)
+			#print("done with combined rec")
 		
 		#TODO: what to do with the list of initial set? Some sort of combining?
 
@@ -338,38 +333,40 @@ class Verifier:
 		#print("TODO: is the initial set correct?")
 		#print(initial_set)
 		#breakpoint()
-		inital_star = initial_set[0]
+		#KB HERE: combine the stars into a rectangle
+			#print(initial_set)
+			#inital_star = initial_set[0]
 
 		#KB: task - why isn't initial star in reach tube
-		reach_tube = inital_star.calc_reach_tube(
+			reach_tube = combined_star.calc_reach_tube(
 			mode_label,
 			time_horizon,
 			time_step,
 			sim_func,
 			lane_map=lane_map
-		)
+			)
 		#KB working - good up to here
 		   
-		if incremental:
-			cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))
-			#EXISTING CODE, NOT SURE WHAT TO DO:
-		old_code = False
-		if old_code:
-			if res_tube is None:
-				res_tube = cur_bloated_tube
-				tube_length = cur_bloated_tube.shape[0]
-			else:
-				if not tube_length <= 2 * combine_seg_idx:
-					
-					cur_bloated_tube = cur_bloated_tube[: tube_length - combine_seg_idx * 2, :]
-					# Handle Lower Bound
-					res_tube[combine_seg_idx * 2 :: 2, 1:] = np.minimum(
-						res_tube[combine_seg_idx * 2 :: 2, 1:], cur_bloated_tube[::2, 1:]
-					)
-					# Handle Upper Bound
-					res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
-						res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
-					)
+			if incremental:
+				cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))
+				#EXISTING CODE, NOT SURE WHAT TO DO:
+			old_code = False
+			if old_code:
+				if res_tube is None:
+					res_tube = cur_bloated_tube
+					tube_length = cur_bloated_tube.shape[0]
+				else:
+					if not tube_length <= 2 * combine_seg_idx:
+						
+						cur_bloated_tube = cur_bloated_tube[: tube_length - combine_seg_idx * 2, :]
+						# Handle Lower Bound
+						res_tube[combine_seg_idx * 2 :: 2, 1:] = np.minimum(
+							res_tube[combine_seg_idx * 2 :: 2, 1:], cur_bloated_tube[::2, 1:]
+						)
+						# Handle Upper Bound
+						res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
+							res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
+						)
 		
 		return reach_tube, cache_tube_updates
 
@@ -1007,6 +1004,7 @@ class Verifier:
 				continue
 			agent_id = agent.id
 			#KB working: why only 0:2!
+			#KB check here:
 			state_dict = {
 				aid: (node.trace[aid][0:2], node.mode[aid], node.static[aid]) for aid in node.agent
 			}
@@ -1392,7 +1390,7 @@ class Verifier:
 		for tmp in all_dest:
 			dest.append(tmp)
 		#breakpoint()
-		return dest, [new_state]
+		return dest, new_state
 
 	@staticmethod
 	def _get_combinations(symbols, cont_var_dict):

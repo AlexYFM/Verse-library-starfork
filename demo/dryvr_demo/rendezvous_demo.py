@@ -14,8 +14,13 @@ class CraftMode(Enum):
 
 
 if __name__ == "__main__":
+    from verse.scenario import Scenario, ScenarioConfig
+    from verse.analysis import ReachabilityMethod
     input_code_name = "./demo/dryvr_demo/rendezvous_controller.py"
-    scenario = Scenario()
+    config = ScenarioConfig(parallel=False)
+
+    scenario = Scenario(config=config)
+    scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
 
     car = craft_agent("test", file_name=input_code_name)
     scenario.add_agent(car)
@@ -29,13 +34,13 @@ if __name__ == "__main__":
 
     scenario.set_init(
         [
-            StarSet.from_polytope(initial_set_polytope_1)
+           StarSet.from_polytope(initial_set_polytope_1)
         ],
         [
             tuple([CraftMode.ProxA]),
         ],
     )
-    traces = scenario.verify(200, 1)
+    traces = scenario.verify(200, .1)
     #fig = go.Figure()
     #fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
     #fig.show()
@@ -43,4 +48,4 @@ if __name__ == "__main__":
     import plotly.graph_objects as go
     from verse.plotter.plotterStar import *
 
-    plot_reachtube_stars(traces, None, 0 , 1)
+    plot_reachtube_stars(traces, None, 0 , 1, 1)

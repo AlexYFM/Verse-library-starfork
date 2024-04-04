@@ -39,7 +39,7 @@ if __name__ == "__main__":
     import plotly.graph_objects as go
     from verse.plotter.plotterStar import *
 
-    plot_reachtube_stars(traces, None, 0 , 1, filter = 3)
+    plot_reachtube_stars(traces, None, 0 , 1, filter = 1)
 
     #traces.dump("./demo/gearbox/output.json")
     #fig = go.Figure()

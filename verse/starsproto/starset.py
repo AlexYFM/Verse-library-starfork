@@ -56,6 +56,8 @@ class StarSet:
         self.C = np.copy(C)
         self.g = np.copy(g)
 
+    def dimension(self):
+        return len(self.center)
     def starcopy(self):
         return StarSet(self.center, self.basis, self.C, self.g)
 
@@ -403,6 +405,21 @@ class StarSet:
         if results.status == 2:
             return False
         raise Exception("linear program had unexpected result")
+
+    def combine_stars(stars):
+        new_rect = []
+        for i in range(0, stars[0].n):
+            max = None
+            min = None
+            for star in stars:
+                this_min, this_max = star.get_max_min(i)
+                if min == None or this_min < min:
+                    min = this_min
+                if max == None or this_max > max:
+                    max = this_max
+            new_rect.append([min, max])
+        import polytope as pc
+        return StarSet.from_polytope(pc.box2poly(new_rect))
 
 
 class HalfSpace:

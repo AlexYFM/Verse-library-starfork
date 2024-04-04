@@ -1,44 +1,63 @@
 import numpy as np
 
 
-def sets(d, thing, attrs, vals):
-    d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
+def sets(d, thing, attrs, vals, stars):
+    if stars:
+        d.update({thing + "." + k: v for k, v in zip(attrs, [vals for x in range(len(attrs))])})
+    else:
+        d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
+
+#def sets_disc(d, thing, attrs, vals)
+#    if len(vals) > 0 and type(vals[0]) == StarSet:
+#        d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
+    #else:
+    #    d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
+    #d.update({thing + "." + k: v for k, v in zip(attrs, vals)})
 
 
-def adds(d, thing, attrs, vals):
-    for k, v in zip(attrs, vals):
-        if thing + "." + k not in d:
-            d[thing + "." + k] = [v]
-        else:
-            d[thing + "." + k].append(v)
+def adds(d, thing, attrs, vals, stars):
+    #TODO: how does this respond with more than 2 agents
+    #    d.update({thing + "." + k: v for k, v in zip(attrs, [vals[0] for x in range(len(attrs))])})
+    if stars:
+        for k, v in zip(attrs, [vals for x in range(len(attrs))]):
+            if thing + "." + k not in d:
+                d[thing + "." + k] = [v]
+            else:
+                d[thing + "." + k].append(v)
+    else:
+        for k, v in zip(attrs, vals):
+            if thing + "." + k not in d:
+                d[thing + "." + k] = [v]
+            else:
+                d[thing + "." + k].append(v)
 
 
 def set_states_2d_ball(cnts, disc, thing, val):
     state, mode, static = val
-    sets(cnts, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], state[1:7])
-    sets(disc, thing, ["craft_mode"], mode)
+    sets(cnts, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], state[1], True)
+    sets(disc, thing, ["craft_mode"], mode, False)
 
 
 def set_states_3d_ball(cnts, disc, thing, val):
     state, mode, static = val
     transp = np.transpose(np.array(state)[:, 1:7])
-    assert len(transp) == 6
-    sets(cnts, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], transp)
-    sets(disc, thing, ["craft_mode"], mode)
+    #assert len(transp) == 6
+    sets(cnts, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], state[1], True)
+    sets(disc, thing, ["craft_mode"], mode, False)
 
 
 def add_states_2d_ball(cont, disc, thing, val):
     state, mode, static = val
-    adds(cont, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], state[1:7])
-    adds(disc, thing, ["craft_mode"], mode)
+    adds(cont, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], state[1], True)
+    adds(disc, thing, ["craft_mode"], mode, False)
 
 
 def add_states_3d_ball(cont, disc, thing, val):
     state, mode, static = val
     transp = np.transpose(np.array(state)[:, 1:7])
-    assert len(transp) == 6
-    adds(cont, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], transp)
-    adds(disc, thing, ["craft_mode"], mode)
+    #assert len(transp) == 6
+    adds(cont, thing, ["xp", "yp", "xd", "yd", "total_time", "cycle_time"], state[1], True)
+    adds(disc, thing, ["craft_mode"], mode, False)
 
 
 class CraftSensor:

@@ -100,7 +100,7 @@ traces_veri = scenario.verify(20, 0.01)
 import plotly.graph_objects as go
 from verse.plotter.plotterStar import *
 
-plot_reachtube_stars(traces_veri, Map2Lanes(), 0 , 1)
+plot_reachtube_stars(traces_veri, Map2Lanes(), 0 , 1, 10)
 
 #fig = go.Figure()
 #fig = reachtube_tree(traces_veri, Map2Lanes(), fig, 1, 2, [1, 2], "lines", "trace")

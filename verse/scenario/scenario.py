@@ -120,24 +120,23 @@ class Scenario:
         # agent.decision_logic.vertexStrings = [','.join(elem) for elem in agent.decision_logic.vertices]
 
     def set_init_single(
-        self, agent_id, init: list, init_mode: tuple, static=[], uncertain_param=[]
+        self, agent_id, init, init_mode: tuple, static=[], uncertain_param=[]
     ):
         """Sets the initial conditions for a single agent."""
         assert agent_id in self.agent_dict, "agent_id not found"
         agent = self.agent_dict[agent_id]
-        assert len(init) == 1 or len(init) == 2, "the length of init should be 1 or 2"
+        #assert len(init) == 1 or len(init) == 2, "the length of init should be 1 or 2"
         # print(agent.decision_logic.state_defs.values())
         if agent.decision_logic != agent.decision_logic.empty():
-            for i in init:
-                assert len(i) == len(
+            assert init.dimension() == len(
                     list(agent.decision_logic.state_defs.values())[0].cont
                 ), "the length of element in init not fit the number of continuous variables"
             # print(agent.decision_logic.mode_defs)
             assert len(init_mode) == len(
                 list(agent.decision_logic.state_defs.values())[0].disc
             ), "the length of element in init_mode not fit the number of discrete variables"
-        if len(init) == 1:
-            init = init + init
+        #if len(init) == 1:
+        #    init = init + init
         self.init_dict[agent_id] = copy.deepcopy(init)
         self.init_mode_dict[agent_id] = copy.deepcopy(init_mode)
         self.agent_dict[agent_id].set_initial(init, init_mode)

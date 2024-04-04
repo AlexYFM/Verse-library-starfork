@@ -139,7 +139,6 @@ class GuardExpressionAst:
         #breakpoint()
         res = False
         is_contained = False
-
         for cont_vars in continuous_variable_dict:
             underscored = cont_vars.replace(".", "_")
             self.cont_variables[cont_vars] = underscored
