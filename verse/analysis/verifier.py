@@ -1358,13 +1358,13 @@ class Verifier:
 					#TODO: check that this only gets run on ego?
 					if 'ego' in var:
 						statevec.append(var)
-				#TODO fix the fact that the equation has x instead of ego.x
 
 
 				#print(statevec)
 
 				#concern: how to handle the case where you need other agents state. for now: assume you do not
 				def reset_func(state): #[ego.x, ego.y, ...]
+					#breakpoint()
 					output = np.copy(state)
 					val_dict = {}
 					tmp_exp = copy.deepcopy(expr)
@@ -1380,6 +1380,7 @@ class Verifier:
 				#print("TODO: find where/when this gets set elsewhere")
 				#breakpoint()
 				#print("foo")
+				#breakpoint()
 				new_state = new_state.apply_reset(reset_func)
 				#print("bar")
 				#breakpoint()

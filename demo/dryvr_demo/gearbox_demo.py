@@ -32,7 +32,7 @@ if __name__ == "__main__":
     car.set_initial(StarSet.from_polytope(initial_set_polytope_1), tuple([AgentMode.Free]))
     scenario.add_agent(car)
 
-    traces = scenario.verify(0.2, 0.001)
+    traces = scenario.verify(0.2, 0.01)
     #traces = scenario.verify(0.2, 0.01)
 
     
