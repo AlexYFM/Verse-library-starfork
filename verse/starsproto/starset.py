@@ -108,6 +108,7 @@ class StarSet:
    prototype function for now. Will likley need more args to properly run simulation
     '''
     def post_cont(self, simulate, t):
+        #breakpoint()
         new_center = simulate(self.center,t)
         new_basis = np.empty_like(self.basis)
         for i in range(0, len(self.basis)):

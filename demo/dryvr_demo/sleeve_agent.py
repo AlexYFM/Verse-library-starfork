@@ -64,7 +64,7 @@ class sleeve_agent(BaseAgent):
         trace =[[0] + init.tolist()]
         for i in range(len(t)):
             if mode[0] == "Free":
-                r = ode(self.dynamic_free)
+                r = ode(self.dynamic_meshed)
             elif mode[0] == "Meshed":
                 r = ode(self.dynamic_meshed)
             else:
