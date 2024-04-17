@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import polytope as pc
 from z3 import *
 from verse.plotter.plotterStar import *
+import polytope as pc
+
+from verse.analysis.dryvr import calc_bloated_tube
 
 class StarSet:
     """
@@ -78,7 +81,7 @@ class StarSet:
         raise Exception("Basis for new star set must be the same")
     
 
-    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,lane_map):
+    def calc_reach_tube_linear(self, mode_label,time_horizon,time_step,sim_func,lane_map):
         reach_tubes = []#[[0,self]]
         sim_results = sim_func(mode_label, self.center.copy(), time_horizon, time_step, lane_map)
 
@@ -99,6 +102,87 @@ class StarSet:
 
 
         return reach_tubes
+
+    def overapprox_rectangle(self):
+        maxes = []
+        mins = []
+        for i in range(0,self.n):
+            min, max = self.get_max_min(i)
+            maxes.append(max)
+            mins.append(min)
+
+        return [mins, maxes]
+            
+
+
+    def overapprox_rectangles(self):
+        breakpoint()
+        print("this version does work!!")
+        #get the sum of each column
+        coefficents = self.basis.sum(axis = 0)
+
+        #find the alphas to minimize the pt to fit into the constraints
+        res = linprog(c=coefficents, 
+                A_ub=self.C, 
+                b_ub=self.g, 
+                bounds=(None, None))
+        min = self.center + (coefficents * res.x)
+
+        #maximize:
+        
+        invert_coefficents = -1 * coefficents
+        res = linprog(c=invert_coefficents, 
+                A_ub=self.C, 
+                b_ub=self.g, 
+                bounds=(None, None))
+        max = self.center + (coefficents * res.x)
+        return min, max
+
+    def rect_to_star(min_list, max_list):
+        if len(min_list) != len(max_list):
+            raise Exception("max and min must be same length")
+        dims = []
+        for i in range(0, len(min_list)):
+            dims.append([min_list[i], max_list[i]])
+        poly = pc.box2poly(dims)
+        return StarSet.from_polytope(poly)
+
+    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map):
+        #get rectangle
+
+        initial_set = self.overapprox_rectangle()
+        #get reachtube
+        bloat_tube = calc_bloated_tube(
+            mode_label,
+            initial_set,
+            time_horizon,
+            time_step,
+            sim_func,
+            bloating_method,
+            kvalue,
+            sim_trace_num,
+            lane_map=lane_map
+        )
+        #transform back into star
+        star_tube = []
+        #odd entries: bloat_tube[::2, 1:]   
+        #even entries: bloat_tube[1::2, 1:] 
+        #data only bloat_tube[ 1:]
+        for entry in bloat_tube:
+            time = entry[0] 
+            data = entry[1:]
+            if len(star_tube) > 0:
+                if star_tube[-1][0] == time:
+                    star_tube[-1][1] = StarSet.rect_to_star(data,star_tube[-1][1])
+                else:
+                    if not isinstance(star_tube[-1][1], StarSet):
+                        star_tube[-1][1] = StarSet.rect_to_star(star_tube[-1][1], star_tube[-1][1])
+                    star_tube.append([time,data])
+            else:
+                star_tube.append([time,data])
+        #KB: TODO: where is min for last time point and first time point
+        star_tube.pop()
+        return star_tube
 
 
     #def get_new_basis(x_0, new_x_0, new_x_i, basis):
@@ -365,6 +449,18 @@ class StarSet:
         # return the point
         return range_pt
     
+    def get_true_center(self):
+        #maxes = []
+        #mins = []
+        pt = []
+        for i in range(0,self.n):
+            min, max = self.get_max_min(i)
+            pt.append(max - min / 2)
+            #maxes.append(max)
+            #mins.append(min)
+        return pt
+
+
     def get_max_min(self, i):
         #breakpoint()
         #take the ith index of each basis

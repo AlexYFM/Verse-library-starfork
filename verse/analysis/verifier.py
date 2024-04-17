@@ -294,7 +294,9 @@ class Verifier:
 		:return:    the full bloated tube
 					cache to be updated
 		"""
-		print("in stars calculate full bloated tube")
+		bloating_method = "PW"
+		if "bloating_method" in params:
+			bloating_method = params["bloating_method"]
 		cache_tube_updates = []
 		if incremental:
 			cached_tube, missing_seg_idx_list = cached_tube_info
@@ -337,15 +339,17 @@ class Verifier:
 			#print(initial_set)
 			#inital_star = initial_set[0]
 
-		#KB: task - why isn't initial star in reach tube
 			reach_tube = combined_star.calc_reach_tube(
 			mode_label,
 			time_horizon,
 			time_step,
 			sim_func,
+			bloating_method,
+			kvalue,
+			sim_trace_num,
 			lane_map=lane_map
 			)
-		#KB working - good up to here
+
 		   
 			if incremental:
 				cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))
@@ -523,6 +527,7 @@ class Verifier:
 					)
 				# num_calls += 1
 				#print(cur_bloated_tube)
+				#breakpoint()
 				trace = np.array(cur_bloated_tube)
 				trace[:, 0] += node.start_time
 				node.trace[agent_id] = trace.tolist()
