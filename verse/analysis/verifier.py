@@ -961,7 +961,6 @@ class Verifier:
 					agent = node.agent[agent_id]
 					if len(agent.decision_logic.args) == 0:
 						continue
-					breakpoint()
 					state_dict = {
 						aid: (node.trace[aid][0], node.mode[aid], node.static[aid])
 						for aid in node.agent
@@ -972,7 +971,6 @@ class Verifier:
 						lambda i: (i.var, i.cond, i.val),
 					)
 					for path in agent_paths:
-						breakpoint()
 						cont_var_dict_template, discrete_variable_dict, length_dict = sensor.sense(
 							agent, state_dict, track_map
 						)
@@ -1015,7 +1013,6 @@ class Verifier:
 			state_dict = {
 				aid: (node.trace[aid][0:2], node.mode[aid], node.static[aid]) for aid in node.agent
 			}
-			breakpoint()
 			cont_var_dict_template, discrete_variable_dict, length_dict = sensor.sense(
 				agent, state_dict, track_map
 			)
