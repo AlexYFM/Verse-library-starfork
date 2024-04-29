@@ -50,6 +50,8 @@ class Lane:
 
     def get_lateral_distance(self, position: np.ndarray) -> float:
         seg_idx, segment = self.get_lane_segment(position)
+        #if segment == None:
+        #    return None
         longitudinal, lateral = segment.local_coordinates(position)
         return lateral
 

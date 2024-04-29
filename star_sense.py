@@ -54,13 +54,13 @@ class VechicleSensor:
         self.sensor = 1
 
     # The baseline sensor is omniscient. Each agent can get the state of all other agents
-    def sense(self, agent: BaseAgent, state_dict, lane_map):
+    def sense(self, agent: BaseAgent, state_dict, lane_map, simulate = True):
         len_dict = {}
         cont = {}
         disc = {}
         len_dict = {"others": len(state_dict) - 1}
         tmp = np.array(list(state_dict.values())[0][0])
-        if tmp.ndim < 2:
+        if simulate: #tmp.ndim < 2:
             breakpoint()
             num = 1
             if agent.id == 'car':
@@ -92,27 +92,26 @@ class VechicleSensor:
 
 
         else:
-            breakpoint() #verify?
+            #breakpoint() #verify?
             if agent.id == 'car':
-
+                
                 car = state_dict['car']
 
-                star1 = car[0][0][1]
-                star2 = car[0][1][1]
+                #only use the first one (two stars are stored as an unfortunate consequence of checking for sim vs verify)
+                star1 = car[0][1]
                 
-                rect1 = star1.overapprox_rectangle()
-                rect2 = star2.overapprox_rectangle()
+                rect = star1.overapprox_rectangle()
 
-                cont['ego.x'] = [star1, star2]
-                cont['ego.y'] = [star1, star2]
-                cont['ego.theta'] = [star1, star2]
-                cont['ego.v'] = [star1, star2]
-                cont['ego.t'] = [star1, star2]
+                cont['ego.x'] = star1
+                cont['ego.y'] = star1
+                cont['ego.theta'] = star1
+                cont['ego.v'] = star1
+                cont['ego.t'] = star1
 
                 disc['ego.agent_mode'] = state_dict['car'][1][0]
 
-                xlist = [rect2[0][0], rect2[1][0]]
-                ylist = [rect2[0][1], rect2[1][1]]
+                xlist = [rect[0][0], rect[1][0]]
+                ylist = [rect[0][1], rect[1][1]]
 
                 # print(cont)
                 # print(disc)
@@ -126,15 +125,21 @@ class VechicleSensor:
                     for y in ylist:
                         position = np.array([x,y])
                         #print(position)
-                        true_lateral.append(lane_map.get_lateral_distance("T0", position))
+                        lat_pos = lane_map.get_lateral_distance("T0", position)
+                        #if lat_pos == None:
+                        #    true_lateral.append(4)
+                        #    true_lateral.append(-4)
+                        #else:
+                        true_lateral.append(lat_pos)
 
-                blowup = [[min(true_lateral) - 0.005, min(true_lateral) - 0.005],[ max(true_lateral) + 0.005,  max(true_lateral) + 0.005]]
+                #blowup = [[min(true_lateral) - 0.005, min(true_lateral) - 0.005],[ max(true_lateral) + 0.005,  max(true_lateral) + 0.005]]
                 #perception contract: blow up lateral array and choose minimum
 
-                pol = pc.box2poly(blowup)
-                new_star = StarSet.from_polytope(pol)
-
-                cont['ego.s'] = [min(true_lateral) - 0.01, min(true_lateral) + 0.01]
+                #pol = pc.box2poly(blowup)
+                #new_star = StarSet.from_polytope(pol)
+                
+                cont['ego.s'] = [min(true_lateral), max(true_lateral)]
+                #print(cont['ego.s'])
 
 
                 
