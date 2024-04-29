@@ -4,7 +4,7 @@ from scipy.optimize import linprog
 import matplotlib.pyplot as plt
 import polytope as pc
 from z3 import *
-#from verse.plotter.plotterStar import 
+from verse.plotter.plotterStar import *
 import polytope as pc
 
 from verse.analysis.dryvr import calc_bloated_tube
@@ -80,9 +80,8 @@ class StarSet:
             return StarSet(new_center, new_basis, self.C, self.g)
         raise Exception("Basis for new star set must be the same")
     
-#   def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map):
 
-    def calc_reach_tube_linear(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map):
+    def calc_reach_tube_linear(self, mode_label,time_horizon,time_step,sim_func,lane_map):
         reach_tubes = []#[[0,self]]
         sim_results = sim_func(mode_label, self.center.copy(), time_horizon, time_step, lane_map)
 
@@ -116,7 +115,7 @@ class StarSet:
             
 
 
-    def overapprox_rectangles_bad(self):
+    def overapprox_rectangles(self):
         breakpoint()
         print("this version does work!!")
         #get the sum of each column

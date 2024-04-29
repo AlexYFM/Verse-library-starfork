@@ -64,11 +64,11 @@ g = np.array([1,1,1,1])
 test1 = StarSet(center,basis, C, g)
 test_transformed = test1.post_cont(sim_simple, 1)
 test_transformed2 = test1.post_cont(sim_ugly, 1)
-print(test1.overapprox_rectangle())
+print(test1.overapprox_rectangles())
 
-print(test_transformed.overapprox_rectangle())
+print(test_transformed.overapprox_rectangles())
 
-print(test_transformed2.overapprox_rectangle())
+print(test_transformed2.overapprox_rectangles())
 
 plot_stars([test1, test_transformed])
 plot_stars([test1, test_transformed2])
@@ -88,11 +88,11 @@ test2 = StarSet(center,basis, C, g)
 test_transformed = test2.post_cont(sim_simple, 1)
 test_transformed2 = test2.post_cont(sim_ugly, 1)
 
-print(test2.overapprox_rectangle())
+print(test2.overapprox_rectangles())
 
-print(test_transformed.overapprox_rectangle())
+print(test_transformed.overapprox_rectangles())
 
-print(test_transformed2.overapprox_rectangle())
+print(test_transformed2.overapprox_rectangles())
 
 
 plot_stars([test2, test_transformed])

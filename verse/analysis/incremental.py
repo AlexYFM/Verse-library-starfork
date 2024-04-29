@@ -9,7 +9,6 @@ import itertools, copy, numpy.typing as nptyp, numpy as np
 
 from verse.analysis.dryvr import _EPSILON
 
-
 # from verse.analysis.simulator import PathDiffs
 from verse.parser.parser import ControllerIR, ModePath
 
@@ -123,9 +122,7 @@ def convert_reach_trans(agent_id, transit_agents, inits, transition, trans_ind):
 
 def combine_all(inits):
     print("TODO: fix this as needed")
-    from verse.starsproto.starset import StarSet
-
-    return StarSet.combine_stars(inits)
+    return inits[-1]
     #return [
     #    [min(a) for a in np.transpose(np.array(inits)[:, 0])],
     #    [max(a) for a in np.transpose(np.array(inits)[:, 1])],

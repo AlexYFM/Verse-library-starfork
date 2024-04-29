@@ -25,7 +25,6 @@ from verse.map.lane_map import LaneMap
 from verse.parser.parser import find, ModePath, unparse
 from verse.agents.base_agent import BaseAgent
 from verse.automaton import GuardExpressionAst, ResetExpression
-#from verse.starsproto import StarSet
 
 pp = functools.partial(pprint.pprint, compact=True, width=130)
 
@@ -282,7 +281,7 @@ class Verifier:
 		params,
 		kvalue,
 		sim_trace_num,
-		combine_seg_length=100,
+		combine_seg_length=1000,
 		guard_checker=None,
 		guard_str="",
 		lane_map=None,
@@ -309,14 +308,12 @@ class Verifier:
 		else:
 			tube_length = res_tube.shape[0]
 		#What is this and why does the same star set appear twice?    
-		#print(missing_seg_idx_list)
-
+		print(missing_seg_idx_list)
 
 		for combine_seg_idx in missing_seg_idx_list:
-			#breakpoint()
 			rect_seg = initial_set[combine_seg_idx : combine_seg_idx + combine_seg_length]
-			#print("len of rect_sec:")
-			#print(len(rect_seg))
+			print("len of rect_sec:")
+			print(len(rect_seg))
 			#combined_rect = None
 			#for rect in rect_seg:
 			#	rect = np.array(rect)
@@ -342,7 +339,7 @@ class Verifier:
 			#print(initial_set)
 			#inital_star = initial_set[0]
 
-			cur_bloated_tube = combined_star.calc_reach_tube(
+			reach_tube = combined_star.calc_reach_tube(
 			mode_label,
 			time_horizon,
 			time_step,
@@ -357,13 +354,13 @@ class Verifier:
 			if incremental:
 				cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))
 				#EXISTING CODE, NOT SURE WHAT TO DO:
-			old_code = True
+			old_code = False
 			if old_code:
 				if res_tube is None:
 					res_tube = cur_bloated_tube
-					tube_length = len(cur_bloated_tube)
+					tube_length = cur_bloated_tube.shape[0]
 				else:
-					if not tube_length <= combine_seg_idx:
+					if not tube_length <= 2 * combine_seg_idx:
 						
 						cur_bloated_tube = cur_bloated_tube[: tube_length - combine_seg_idx * 2, :]
 						# Handle Lower Bound
@@ -375,7 +372,7 @@ class Verifier:
 							res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
 						)
 		
-		return res_tube, cache_tube_updates
+		return reach_tube, cache_tube_updates
 
 
 
@@ -792,11 +789,9 @@ class Verifier:
 					inits = node.init[agent_id]
 					#print('new agent inits')
 					#print(inits)
-					#combined = inits
-					#if reachability_method != ReachabilityMethod.STAR_SETS:
-					#	combined = combine_stars(inits)
-					#else:
-					combined = combine_all(inits)
+					combined = inits
+					if reachability_method != ReachabilityMethod.STAR_SETS:
+						combined = combine_all(inits)
 					#print('combined')
 					#print(combined)
 					if self.config.incremental:
@@ -979,7 +974,7 @@ class Verifier:
 					for path in agent_paths:
 						breakpoint()
 						cont_var_dict_template, discrete_variable_dict, length_dict = sensor.sense(
-							agent, state_dict, track_map, False
+							agent, state_dict, track_map
 						)
 						reset = (path.var, path.val_veri)
 						guard_expression = GuardExpressionAst([path.cond_veri])
@@ -1016,13 +1011,13 @@ class Verifier:
 				continue
 			agent_id = agent.id
 			#KB working: why only 0:2!
-			#KB check here: 0:2
-			#KB issue: we have to leave extra copies of star set or else sensor thinks its simulate
+			#KB check here:
 			state_dict = {
-				aid: (node.trace[aid][0], node.mode[aid], node.static[aid]) for aid in node.agent
+				aid: (node.trace[aid][0:2], node.mode[aid], node.static[aid]) for aid in node.agent
 			}
+			breakpoint()
 			cont_var_dict_template, discrete_variable_dict, length_dict = sensor.sense(
-				agent, state_dict, track_map, False
+				agent, state_dict, track_map
 			)
 			# TODO-PARSER: Get equivalent for this function
 			# Construct the guard expression
@@ -1105,7 +1100,7 @@ class Verifier:
 					continue
 				# if np.array(agent_state).ndim != 2:
 				#     pp(("weird state", agent_id, agent_state))
-				cont_vars, disc_vars, len_dict = sensor.sense(agent, state_dict, track_map, False)
+				cont_vars, disc_vars, len_dict = sensor.sense(agent, state_dict, track_map)
 				resets = defaultdict(list)
 				# Check safety conditions
 				for i, a in enumerate(agent.decision_logic.asserts_veri):
@@ -1121,7 +1116,7 @@ class Verifier:
 						if sat:
 							sat = ge.evaluate_guard_hybrid(agent, disc_vars, cont_vars, track_map)
 							if sat:
-								
+								#breakpoint()
 								sat, contained = ge.evaluate_guard_cont(agent, cont_vars, track_map)
 								sat = sat and contained
 						return sat
