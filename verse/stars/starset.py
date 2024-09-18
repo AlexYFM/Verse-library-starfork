@@ -13,7 +13,7 @@ from typing_extensions import List, Callable
 
 from verse.analysis.dryvr import calc_bloated_tube
 
-import jax
+# import jax
 class StarSet:
     """
     StarSet
