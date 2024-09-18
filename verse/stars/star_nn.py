@@ -215,12 +215,13 @@ post_points = torch.tensor(post_points).float()
 stars = []
 percent_contained = []
 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(basis + 1e-6*torch.eye(n))@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-
+bases = []
 for i in range(len(times)):
     # mu, center = model(test[i])[0].detach().numpy(), model(test[i])[1:].detach().numpy()
     flat_bases = model(test[i]).detach()
     n = int(len(flat_bases) ** 0.5) 
     basis = reshaped_output = flat_bases.view(-1, n, n)[0]
+    bases.append(basis.numpy())
     stars.append(StarSet(centers[i], basis.numpy(), C.numpy(), g.numpy()))
     points = torch.tensor(post_points[:, i, 1:]).float()
     contain = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))
@@ -238,6 +239,7 @@ plot_stars_points_nonit(stars, post_points)
 
 results = pd.DataFrame({
     'time': test.squeeze().numpy(),
+    # 'basis': np.array(basis),
     'percent of points contained': percent_contained
 })
 
