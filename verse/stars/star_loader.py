@@ -128,73 +128,78 @@ def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
         samples.append(S_0[np.random.randint(0, len(S_0))])
     return samples
 
-for epoch in range(num_epochs):
-    # Zero the parameter gradients
-    optimizer.zero_grad()
+model.load_state_dict(torch.load("./verse/stars/model_weights.pth"))
 
-    samples = sample_initial()
+### make the below loop a function -- e.g., train(num_epochs)
+# for epoch in range(num_epochs):
+#     # Zero the parameter gradients
+#     optimizer.zero_grad()
 
-    post_points = []
-    for point in samples:
-            post_points.append(sim_test(None, point, T, ts).tolist())
-    post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
+#     samples = sample_initial()
+
+#     post_points = []
+#     for point in samples:
+#             post_points.append(sim_test(None, point, T, ts).tolist())
+#     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
     
-    centers = [] ### eventually this should be a NN output too
-    for i in range(len(times)):
-        points = post_points[:, i, 1:]
-        new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-        centers.append(torch.tensor(new_center, dtype=torch.float))
+#     centers = [] ### eventually this should be a NN output too
+#     for i in range(len(times)):
+#         points = post_points[:, i, 1:]
+#         new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
+#         centers.append(torch.tensor(new_center, dtype=torch.float))
     
-    # ### V_t is now always I -- check that mu should go to zero
-    # for i in range(len(times)):
-    #     points = post_points[:, i, 1:]
-    #     new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-    #     bases.append(torch.eye(points.shape[1], dtype=torch.double))
-    #     centers.append(torch.tensor(new_center))
+#     # ### V_t is now always I -- check that mu should go to zero
+#     # for i in range(len(times)):
+#     #     points = post_points[:, i, 1:]
+#     #     new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
+#     #     bases.append(torch.eye(points.shape[1], dtype=torch.double))
+#     #     centers.append(torch.tensor(new_center))
 
-    post_points = torch.tensor(post_points).float()
-    ### for now, don't worry about batch training, just do single input, makes more sense to me to think of loss function like this
-    ### I would really like to be able to do batch training though, figure out a way to make it work
-    for i in range(len(times)):
-        # Forward pass
-        t = torch.tensor([times[i]], dtype=torch.float)
-        flat_bases = model(t)
-        n = int(len(flat_bases) ** 0.5) 
-        basis = reshaped_output = flat_bases.view(-1, n, n)
+#     post_points = torch.tensor(post_points).float()
+#     ### for now, don't worry about batch training, just do single input, makes more sense to me to think of loss function like this
+#     ### I would really like to be able to do batch training though, figure out a way to make it work
+#     for i in range(len(times)):
+#         # Forward pass
+#         t = torch.tensor([times[i]], dtype=torch.float)
+#         flat_bases = model(t)
+#         n = int(len(flat_bases) ** 0.5) 
+#         basis = reshaped_output = flat_bases.view(-1, n, n)
         
-        # Compute the loss
-        r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
-        cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-        cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-        size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
-        loss = lamb*cont_loss + size_loss
-        loss.backward()
-        # if i==50:
-        #     print(model.fc1.weight.grad, model.fc1.bias.grad)
-        optimizer.step()
+#         # Compute the loss
+#         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
+#         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+#         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
+#         size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+#         loss = lamb*cont_loss + size_loss
+#         loss.backward()
+#         # if i==50:
+#         #     print(model.fc1.weight.grad, model.fc1.bias.grad)
+#         optimizer.step()
         
-        # print(f'Loss: {loss.item()}, mu: {mu.item()}, t: {t}')
+#         # print(f'Loss: {loss.item()}, mu: {mu.item()}, t: {t}')
 
-    scheduler.step()
-    # Print loss periodically
-    # print(f'Loss: {loss.item():.4f}')
-    if (epoch + 1) % 10 == 0:
-        print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
-        print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
-        for i in range(len(times)):
-            t = torch.tensor([times[i]], dtype=torch.float32)
-            r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
-            cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-            cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-            size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
-            loss = lamb*cont_loss + size_loss
-            print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
+#     scheduler.step()
+#     # Print loss periodically
+#     # print(f'Loss: {loss.item():.4f}')
+#     if (epoch + 1) % 10 == 0:
+#         print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
+#         print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
+#         for i in range(len(times)):
+#             t = torch.tensor([times[i]], dtype=torch.float32)
+#             r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
+#             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+#             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
+#             size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+#             loss = lamb*cont_loss + size_loss
+#             print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
 
 
 # test the new model
 
 model.eval()
-torch.save(model.state_dict(), "./verse/stars/model_weights.pth")
+
+### figure out a way to add a flag when running to save/load in data
+# torch.save(model.state_dict(), "./verse/stars/model_weights.pth")
 
 # S_0 = sample_star(initial_star, num_samples*10) ### this is critical step -- this needs to be recomputed per training step
 S = sample_initial(num_samples*10)
