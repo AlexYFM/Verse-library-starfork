@@ -136,7 +136,7 @@ for epoch in range(num_epochs):
 
     post_points = []
     for point in samples:
-            post_points.append(sim_test(None, point, T, ts).tolist())
+        post_points.append(sim_test(None, point, T, ts).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
     
     centers = [] ### eventually this should be a NN output too
