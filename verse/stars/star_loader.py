@@ -99,40 +99,7 @@ def he_init(m):
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)  # Initialize biases to 0 (optional)
 
-# Apply He initialization to the existing model
-model.apply(he_init)
-# Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
-scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-
-num_epochs = 1 # sample number of epoch -- can play with this/set this as a hyperparameter
-num_samples = 100 # number of samples per time step
-lamb = 0.5
-
-T = 7
-ts = 0.05
-num_times = T//ts
-
-initial_star = StarSet(center, basis, C, g)
-# Toy Function to learn: x^2+20
-
-times = torch.arange(0, T+ts, ts) # times to supply, right now this is fixed while S_t is random. can consider making this random as well
-
-C = torch.tensor(C, dtype=torch.float)
-g = torch.tensor(g, dtype=torch.float)
-# Training loop
-S_0 = sample_star(initial_star, num_samples*10) # should eventually be a hyperparameter as the second input, 
-np.random.seed()
-
-def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
-    samples = []
-    for _ in range(num_samples):
-        samples.append(S_0[np.random.randint(0, len(S_0))])
-    return samples
-
-model.load_state_dict(torch.load("./verse/stars/model_weights.pth"))
-
-def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float = 0.05, num_samples: int = 100) -> np.ndarray:
+def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float = 0.05, num_samples: int = 100, plotting: bool = False) -> np.ndarray:
     model.eval()
 
     C, g = torch.tensor(initial.C, dtype=torch.float), torch.tensor(initial.g, dtype=torch.float)  
@@ -170,7 +137,8 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
 
     percent_contained = np.array(percent_contained)
 
-    plot_stars_points_nonit(stars, post_points)
+    if plotting:
+        plot_stars_points_nonit(stars, post_points)
 
     results = pd.DataFrame({
         'time': test.squeeze().numpy(),
@@ -179,7 +147,7 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
     })
 
     results.to_csv('./verse/stars/nn_results.csv', index=False)
-    plt.show()
+    # plt.show()
 
     return torch.tensor(percent_contained)
 
@@ -189,13 +157,47 @@ def sample_contain(contain: np.ndarray, T: float = 7, ts: float = 0.05) -> torch
     num_times = int(T//ts)
     sample_times = torch.multinomial(distribution, num_times, replacement=True)*ts
 
-    print(sample_times)
+    # print(sample_times)
+    # plt.hist(sample_times.numpy())
+    # plt.show()
     return sample_times 
 
-contain = sample_containment(initial, model)
-sample_contain(contain)
+# Apply He initialization to the existing model
+model.apply(he_init)
+# Use SGD as the optimizer
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-exit()
+num_epochs = 1 # sample number of epoch -- can play with this/set this as a hyperparameter
+num_samples = 100 # number of samples per time step
+lamb = 0.5
+
+T = 7
+ts = 0.05
+num_times = T//ts
+
+initial_star = StarSet(center, basis, C, g)
+# Toy Function to learn: x^2+20
+
+times = torch.arange(0, T+ts, ts) # times to supply, right now this is fixed while S_t is random. can consider making this random as well
+
+C = torch.tensor(C, dtype=torch.float)
+g = torch.tensor(g, dtype=torch.float)
+# Training loop
+S_0 = sample_star(initial_star, num_samples*10) # should eventually be a hyperparameter as the second input, 
+np.random.seed()
+
+def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
+    samples = []
+    for _ in range(num_samples):
+        samples.append(S_0[np.random.randint(0, len(S_0))])
+    return samples
+
+model.load_state_dict(torch.load("./verse/stars/model_weights.pth"))
+
+# contain = sample_containment(initial, model)
+# sample_contain(contain)
+
 ## make the below loop a function -- e.g., train(num_epochs)
 for epoch in range(num_epochs):
     # Zero the parameter gradients
@@ -203,38 +205,36 @@ for epoch in range(num_epochs):
 
     samples = sample_initial()
 
+    ### do sample_containment and sample_contain here to get times
+    sample_times = sample_contain(sample_containment(initial, model))
+    model.train()
+
     post_points = []
     for point in samples:
-            post_points.append(sim_test(None, point, T, ts).tolist())
+            post_points.append(sim_test(None, point, torch.max(sample_times), ts).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
     
     centers = [] ### eventually this should be a NN output too
-    for i in range(len(times)):
-        points = post_points[:, i, 1:]
+    for i in range(len(sample_times)):
+        points = post_points[:, int(sample_times[i]//ts), 1:]
         new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         centers.append(torch.tensor(new_center, dtype=torch.float))
-    
-    # ### V_t is now always I -- check that mu should go to zero
-    # for i in range(len(times)):
-    #     points = post_points[:, i, 1:]
-    #     new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-    #     bases.append(torch.eye(points.shape[1], dtype=torch.double))
-    #     centers.append(torch.tensor(new_center))
 
     post_points = torch.tensor(post_points).float()
     ### for now, don't worry about batch training, just do single input, makes more sense to me to think of loss function like this
     ### I would really like to be able to do batch training though, figure out a way to make it work
-    for i in range(len(times)):
+    for i in range(len(sample_times)):
         # Forward pass
-        t = torch.tensor([times[i]], dtype=torch.float)
+        t = torch.tensor([sample_times[i]], dtype=torch.float)
         flat_bases = model(t)
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)
         
+        print(sample_times[i], int(sample_times[i]//ts))
         # Compute the loss
         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-        cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
+        cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples 
         size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
         loss = lamb*cont_loss + size_loss
         loss.backward()
@@ -247,63 +247,23 @@ for epoch in range(num_epochs):
     scheduler.step()
     # Print loss periodically
     # print(f'Loss: {loss.item():.4f}')
-    if (epoch + 1) % 10 == 0:
-        print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
-        print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
-        for i in range(len(times)):
-            t = torch.tensor([times[i]], dtype=torch.float32)
-            r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
-            cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-            cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-            size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
-            loss = lamb*cont_loss + size_loss
-            print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
+    # if (epoch + 1) % 10 == 0:
+    #     print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
+    #     print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
+    #     for i in range(len(times)):
+    #         t = torch.tensor([times[i]], dtype=torch.float32)
+    #         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
+    #         ### below isn't meaningful since centers only defined for specific times
+    #         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+    #         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
+    #         size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+    #         loss = lamb*cont_loss + size_loss
+    #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
 
 
 # test the new model
+torch.save(model.state_dict(), "./verse/stars/model_weights_adp.pth")
 
-model.eval()
-
-### figure out a way to add a flag when running to save/load in data
-# torch.save(model.state_dict(), "./verse/stars/model_weights.pth")
-
-# S_0 = sample_star(initial_star, num_samples*10) ### this is critical step -- this needs to be recomputed per training step
-S = sample_initial(num_samples*10)
-post_points = []
-for point in S:
-        post_points.append(sim_test(None, point, T, ts).tolist())
-post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
-
-test_times = torch.arange(0, T+ts, ts)
-test = torch.reshape(test_times, (len(test_times), 1))
-centers = [] ### eventually this should be a NN output too
-for i in range(len(times)):
-    points = post_points[:, i, 1:]
-    new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-    centers.append(torch.tensor(new_center, dtype=torch.float))
-
-post_points = torch.tensor(post_points).float()
-
-stars = []
-percent_contained = []
-cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(basis + 1e-6*torch.eye(n))@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-bases = []
-for i in range(len(times)):
-    # mu, center = model(test[i])[0].detach().numpy(), model(test[i])[1:].detach().numpy()
-    flat_bases = model(test[i]).detach()
-    n = int(len(flat_bases) ** 0.5) 
-    basis = flat_bases.view(-1, n, n)[0]
-    bases.append(basis.numpy())
-    stars.append(StarSet(centers[i], basis.numpy(), C.numpy(), g.numpy()))
-    points = torch.tensor(post_points[:, i, 1:]).float()
-    contain = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))
-    percent_contained.append(contain/(num_samples*10)*100)
-    # stars.append(StarSet(center, bases[i], C.numpy(), mu*g.numpy()))
-    # stars.append(StarSet(centers[i], bases[i], C.numpy(), np.diag(model(test[i]).detach().numpy())@g.numpy()))
-
-percent_contained = np.array(percent_contained)
-# for t in test:
-#      print(model(t), t)
-# for b in bases:
-#      print(b)
-# plt.plot(test_times, model(test).detach().numpy())
+contain = sample_containment(initial, model, plotting=True)
+# plt.plot(contain)
+plt.show()
