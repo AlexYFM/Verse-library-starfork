@@ -103,7 +103,8 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
     model.eval()
 
     C, g = torch.tensor(initial.C, dtype=torch.float), torch.tensor(initial.g, dtype=torch.float)  
-    S = sample_initial(num_samples*10) # this really doesn't make sense the way I have it but worry about it later, function signature still makes sense
+    
+    S = sample_initial(num_samples*10) 
     post_points = []
     for point in S:
             post_points.append(sim_test(None, point, T, ts).tolist())
@@ -165,12 +166,12 @@ def sample_contain(contain: np.ndarray, T: float = 7, ts: float = 0.05) -> torch
 # Apply He initialization to the existing model
 model.apply(he_init)
 # Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
 num_epochs = 5 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 0.25
+lamb = 0.5
 
 T = 7
 ts = 0.05
@@ -188,10 +189,13 @@ S_0 = sample_star(initial_star, num_samples*10) # should eventually be a hyperpa
 np.random.seed()
 
 def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
-    samples = []
-    for _ in range(num_samples):
-        samples.append(S_0[np.random.randint(0, len(S_0))])
-    return samples
+    # samples = []
+    # for _ in range(num_samples): # this is potentially pretty slow
+    #     samples.append(S_0[np.random.randint(0, len(S_0))])
+    # return samples
+    sample_indices = torch.randint(0, len(S_0), (num_samples,))
+    S = torch.tensor(S_0, dtype=float)
+    return S[sample_indices].tolist()
 
 model.load_state_dict(torch.load("./verse/stars/model_weights.pth"))
 
@@ -247,22 +251,22 @@ for epoch in range(num_epochs):
     scheduler.step()
     # Print loss periodically
     # print(f'Loss: {loss.item():.4f}')
-    # if (epoch + 1) % 10 == 0:
-    #     print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
-    #     print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
-    #     for i in range(len(times)):
-    #         t = torch.tensor([times[i]], dtype=torch.float32)
-    #         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
-    #         ### below isn't meaningful since centers only defined for specific times
-    #         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-    #         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-    #         size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
-    #         loss = lamb*cont_loss + size_loss
-    #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
+    if (epoch + 1) % 10 == 0:
+        print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
+        # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
+        for i in range(len(sample_times)):
+            t = torch.tensor([times[i]], dtype=torch.float32)
+            r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
+            ### below isn't meaningful since centers only defined for specific times
+            cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+            cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples 
+            size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+            loss = lamb*cont_loss + size_loss
+            print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
 
 
 # test the new model
-torch.save(model.state_dict(), "./verse/stars/model_weights_adp.pth")
+torch.save(model.state_dict(), "./verse/stars/model_weights_adp_1.pth")
 
 contain = sample_containment(initial, model, plotting=True)
 # plt.plot(contain)
