@@ -99,7 +99,7 @@ def he_init(m):
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)  # Initialize biases to 0 (optional)
 
-def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float = 0.05, num_samples: int = 100, plotting: bool = False) -> np.ndarray:
+def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float = 0.05, num_samples: int = 100, plotting: bool = False, epoch: int = None) -> np.ndarray:
     model.eval()
 
     C, g = torch.tensor(initial.C, dtype=torch.float), torch.tensor(initial.g, dtype=torch.float)  
@@ -147,6 +147,9 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
         'percent of points contained': percent_contained
     })
 
+    if epoch is not None:
+        plt.plot(percent_contained, label=f'{epoch}')
+
     results.to_csv('./verse/stars/nn_results.csv', index=False)
     # plt.show()
 
@@ -169,9 +172,10 @@ model.apply(he_init)
 optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-num_epochs = 5 # sample number of epoch -- can play with this/set this as a hyperparameter
+num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 0.5
+lamb = 1
+adp_rate = 0.2 
 
 T = 7
 ts = 0.05
@@ -189,10 +193,6 @@ S_0 = sample_star(initial_star, num_samples*10) # should eventually be a hyperpa
 np.random.seed()
 
 def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
-    # samples = []
-    # for _ in range(num_samples): # this is potentially pretty slow
-    #     samples.append(S_0[np.random.randint(0, len(S_0))])
-    # return samples
     sample_indices = torch.randint(0, len(S_0), (num_samples,))
     S = torch.tensor(S_0, dtype=float)
     return S[sample_indices].tolist()
@@ -210,7 +210,10 @@ for epoch in range(num_epochs):
     samples = sample_initial()
 
     ### do sample_containment and sample_contain here to get times
-    sample_times = sample_contain(sample_containment(initial, model))
+    sample_times = times.clone().detach() 
+    if epoch % int(num_epochs*adp_rate) == 0: # try doing adp sampling every so often
+        print(f'Doing adaptive sampling at on epoch {epoch}')
+        sample_times = sample_contain(sample_containment(initial, model, epoch=epoch))
     model.train()
 
     post_points = []
@@ -256,6 +259,9 @@ for epoch in range(num_epochs):
         # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
         for i in range(len(sample_times)):
             t = torch.tensor([times[i]], dtype=torch.float32)
+            basis = model(t)
+            n = int(len(flat_bases) ** 0.5) 
+            basis = flat_bases.view(-1, n, n)
             r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
             ### below isn't meaningful since centers only defined for specific times
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
@@ -268,6 +274,7 @@ for epoch in range(num_epochs):
 # test the new model
 torch.save(model.state_dict(), "./verse/stars/model_weights_adp_1.pth")
 
-contain = sample_containment(initial, model, plotting=True)
+contain = sample_containment(initial, model, plotting=True, epoch=num_epochs)
+plt.legend()
 # plt.plot(contain)
 plt.show()
