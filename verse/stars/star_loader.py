@@ -128,7 +128,8 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
         flat_bases = model(test[i]).detach()
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)[0]
-        bases.append(basis.numpy())
+        size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+        bases.append(size_loss.numpy())
         stars.append(StarSet(centers[i], basis.numpy(), C.numpy(), g.numpy()))
         points = torch.tensor(post_points[:, i, 1:]).float()
         contain = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))
@@ -143,7 +144,7 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
 
     results = pd.DataFrame({
         'time': test.squeeze().numpy(),
-        # 'basis': np.array(basis),
+        'basis': np.array(bases),
         'percent of points contained': percent_contained
     })
 
@@ -174,7 +175,7 @@ scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
 num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 1
+lamb = 3
 adp_rate = 0.2 
 
 T = 7
@@ -255,11 +256,11 @@ for epoch in range(num_epochs):
     # Print loss periodically
     # print(f'Loss: {loss.item():.4f}')
     if (epoch + 1) % 10 == 0:
-        print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
+        print(f'Epoch [{epoch + 1}/{num_epochs}], lambda {lamb} \n____________________\n')
         # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
         for i in range(len(sample_times)):
             t = torch.tensor([times[i]], dtype=torch.float32)
-            basis = model(t)
+            flat_bases = model(t)
             n = int(len(flat_bases) ** 0.5) 
             basis = flat_bases.view(-1, n, n)
             r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
@@ -270,6 +271,8 @@ for epoch in range(num_epochs):
             loss = lamb*cont_loss + size_loss
             print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
 
+    if epoch > num_epochs*0.5: # start decreasing containment weight over time
+        lamb = max(0.5, lamb*0.9)
 
 # test the new model
 torch.save(model.state_dict(), "./verse/stars/model_weights_adp_1.pth")
