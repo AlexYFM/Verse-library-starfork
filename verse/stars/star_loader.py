@@ -176,6 +176,7 @@ scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
 lamb = 3
+lamb_alg = 0.5 
 adp_rate = 0.2 
 
 T = 7
@@ -241,10 +242,12 @@ for epoch in range(num_epochs):
         # print(sample_times[i], int(sample_times[i]//ts))
         # Compute the loss
         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
-        cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+        cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### r_basis to ensure that the inverse always exists
+        align = lambda p, i: torch.linalg.vector_norm(C@torch.linalg.inv(basis + 1e-6*torch.eye(n))@(p-centers[i])-g) ### almost exactly the same as above except penalizing being far from the boundary
         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples 
+        align_loss = torch.log1p(torch.sum(torch.stack([align(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples) 
         size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
-        loss = lamb*cont_loss + size_loss
+        loss = lamb*cont_loss + align_loss*lamb_alg + size_loss 
         loss.backward()
         # if i==50:
         #     print(model.fc1.weight.grad, model.fc1.bias.grad)
@@ -265,14 +268,16 @@ for epoch in range(num_epochs):
             basis = flat_bases.view(-1, n, n)
             r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
             ### below isn't meaningful since centers only defined for specific times
+            align = lambda p, i: torch.linalg.vector_norm(C@torch.linalg.inv(basis + 1e-6*torch.eye(n))@(p-centers[i])-g) ### almost exactly the same as above except penalizing being far from the boundary
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples 
             size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
-            loss = lamb*cont_loss + size_loss
-            print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
+            align_loss = torch.log1p(torch.sum(torch.stack([align(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples) 
+            loss = lamb*cont_loss + align_loss*lamb_alg + size_loss
+            print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, alignment loss: {align_loss.item():.4f}, time: {t.item():.1f}')
 
     if epoch > num_epochs*0.5: # start decreasing containment weight over time
-        lamb = max(0.5, lamb*0.9)
+        lamb = max(1.5, lamb*0.9)
 
 # test the new model
 torch.save(model.state_dict(), "./verse/stars/model_weights_adp_1.pth")
