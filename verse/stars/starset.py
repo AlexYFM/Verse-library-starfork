@@ -743,8 +743,8 @@ def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: fl
     post_points = np.array(post_points)
     stars: List[StarSet] = []
     for t in range(post_points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
-        # stars.append(gen_starset(post_points[:, t, 1:], old_star)) 
-        stars.append(gen_starset_grad(post_points[:, t, 1:], old_star)) ### testing out new algorithm here, could also do so in startests if I remember 
+        stars.append(gen_starset(post_points[:, t, 1:], old_star)) 
+        # stars.append(gen_starset_grad(post_points[:, t, 1:], old_star)) ### testing out new algorithm here, could also do so in startests if I remember 
     for t in range(post_points.shape[1]):
         plt.scatter(post_points[:, t, 1], post_points[:, t, 2])
     return stars

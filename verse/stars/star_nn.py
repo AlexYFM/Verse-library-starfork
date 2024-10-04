@@ -194,7 +194,7 @@ for epoch in range(num_epochs):
 # test the new model
 
 model.eval()
-torch.save(model.state_dict(), "./verse/stars/model_weights.pth")
+torch.save(model.state_dict(), "./verse/stars/model_weights_org.pth")
 
 # S_0 = sample_star(initial_star, num_samples*10) ### this is critical step -- this needs to be recomputed per training step
 S = sample_initial(num_samples*10)
