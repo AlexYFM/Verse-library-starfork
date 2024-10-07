@@ -9,7 +9,7 @@ def dyn_3d(vec, t):
     ### purely for testing, doesn't correspond to any model
     x_dot = y
     y_dot = (1 - x**2) * y - x
-    z_dot = x
+    z_dot = x-z
 
     return [x_dot, y_dot, z_dot]
 

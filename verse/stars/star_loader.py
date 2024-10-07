@@ -14,8 +14,8 @@ from syn_sim import *
 def dynamic_test(vec, t):
     x, y = t # hack to access right variable, not sure how integrate, ode are supposed to work
     ### vanderpol
-    # x_dot = y
-    # y_dot = (1 - x**2) * y - x
+    x_dot = y
+    y_dot = (1 - x**2) * y - x
 
     ### cardiac cell
     # x_dot = -0.9*x*x-x*x*x-0.9*x-y+1
@@ -26,8 +26,8 @@ def dynamic_test(vec, t):
     # y_dot = 3*x-y
 
     ### brusselator 
-    x_dot = 1+x**2*y-2.5*x
-    y_dot = 1.5*x-x**2*y
+    # x_dot = 1+x**2*y-2.5*x
+    # y_dot = 1.5*x-x**2*y
 
     ### bucking col -- change center to around -0.5 and keep basis size low
     # x_dot = y
@@ -80,6 +80,9 @@ class PostNN(nn.Module):
 
         return x
 
+'''
+Use this encoding to encode frequency information into the inputs. Empirically, I see better results that look more periodic, which is expected for the scenarios I'm testing on
+'''
 def positional_encoding(time: torch.Tensor, d_model: int) -> torch.Tensor:
     pe = torch.zeros(time.size(0), d_model)
     position = time.unsqueeze(1)  # reshape to (batch_size, 1)
@@ -91,13 +94,26 @@ def positional_encoding(time: torch.Tensor, d_model: int) -> torch.Tensor:
     return pe
 
 
-C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
-g = np.array([1,1,1,1])
-basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
+'''
+2D
+'''
+# C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
+# g = np.array([1,1,1,1])
+# basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
+# # basis = np.array([[1, 0], [0, 1]])
+# center = np.array([1.40,2.30])
+
+'''
+3D
+'''
+C = np.transpose(np.array([[1,-1,0,0,0,0],[0,0,1,-1,0,0], [0,0,0,0,1,-1],]))
+g = np.array([1,1,1,1,1,1])
+basis = np.identity(3) * np.diag([.1, .1, .1])
 # basis = np.array([[1, 0], [0, 1]])
-center = np.array([1.40,2.30])
+center = np.array([1.40,2.30, 2])
+
 initial = StarSet(center, basis, C, g)
-d_model = 2*initial.dimension() # pretty sure I can't load in weights given different model as input size different, but I can try it
+d_model = 4*initial.dimension() # pretty sure I can't load in weights given different model as input size different, but I can try it
 
 
 # input_size = 1    # Number of input features 
@@ -115,6 +131,16 @@ def he_init(m):
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)  # Initialize biases to 0 (optional)
 
+'''
+Originally, we sample times uniformly from a sample. Call this sample u(t)=p(t). 
+However, during training there will likely be areas with worse containment due to the randomness of the training loop. 
+We can compute the containment using our containment penalty function and set any penatly>0 equivalent to be not contained. Repeat this for a given set of new points.
+In doing so we now have containment for every time t. Now, we can construct a new a distribution q(t) that gives more weight/importance to inputs with less containment.
+Currently, we do this by just taking 1-containment and normalizing. 
+Now that we have this new distribution, for one training epoch, we can from q(t) instead of u(t) to get time inputs that will most likely be the inputs with worse containment.
+As such, the model now trains temporarily with this new important distribution that should incentivize the model to consider these points more,
+which should decrease loss and thus increase containment as long as the hyperparameters have been tuned correctly.
+'''
 def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float = 0.05, num_samples: int = 100, plotting: bool = False, epoch: int = None) -> np.ndarray:
     model.eval()
 
@@ -123,7 +149,8 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
     S = sample_initial(num_samples*10) 
     post_points = []
     for point in S:
-            post_points.append(sim_test(None, point, T, ts).tolist())
+            # post_points.append(sim_test(None, point, T, ts).tolist())
+            post_points.append(sim_test_3d(None, point, T, ts).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
 
     test_times = torch.arange(0, T+ts, ts)
@@ -187,13 +214,12 @@ def sample_contain(contain: np.ndarray, T: float = 7, ts: float = 0.05) -> torch
 # Apply He initialization to the existing model
 model.apply(he_init)
 # Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 1.5
-lamb_alg = 0.5 
+lamb = 1
 adp_rate = 0.2 
 
 T = 7
@@ -215,7 +241,7 @@ def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
     S = torch.tensor(S_0, dtype=float)
     return S[sample_indices].tolist()
 
-# model.load_state_dict(torch.load("./verse/stars/model_weights.pth"))
+# model.load_state_dict(torch.load("./verse/stars/model_weights_org.pth"))
 
 # contain = sample_containment(initial, model)
 # sample_contain(contain)
@@ -236,7 +262,8 @@ for epoch in range(num_epochs):
 
     post_points = []
     for point in samples:
-            post_points.append(sim_test(None, point, torch.max(sample_times), ts).tolist())
+            # post_points.append(sim_test(None, point, torch.max(sample_times), ts).tolist())
+            post_points.append(sim_test_3d(None, point, T, ts).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
     
     centers = [] ### eventually this should be a NN output too
@@ -261,9 +288,7 @@ for epoch in range(num_epochs):
         # Compute the loss
         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### r_basis to ensure that the inverse always exists
-        # align = lambda p, i: torch.linalg.vector_norm(C@torch.linalg.inv(basis + 1e-6*torch.eye(n))@(p-centers[i])-g) ### almost exactly the same as above except penalizing being far from the boundary
         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples 
-        # align_loss = torch.log1p(torch.sum(torch.stack([align(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples) 
         # size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1))) # try out different loss functions and fiferent examples
         size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1))) # try out different loss functions and fiferent examples        
         # loss = lamb*cont_loss + align_loss*lamb_alg + size_loss 
@@ -290,13 +315,10 @@ for epoch in range(num_epochs):
             basis = flat_bases.view(-1, n, n)
             r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
             ### below isn't meaningful since centers only defined for specific times
-            # align = lambda p, i: torch.linalg.vector_norm(C@torch.linalg.inv(basis + 1e-6*torch.eye(n))@(p-centers[i])-g) ### almost exactly the same as above except penalizing being far from the boundary
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
             # size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
             size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1))) # try out different loss functions and fiferent examples        
-            # align_loss = torch.log1p(torch.sum(torch.stack([align(point, i) for point in post_points[:, int(sample_times[i]//ts), 1:]]))/num_samples) 
-            # loss = lamb*cont_loss + align_loss*lamb_alg + size_loss
             loss = lamb*cont_loss + size_loss
             # print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, alignment loss: {align_loss.item():.4f}, time: {t.item():.1f}')
             print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')

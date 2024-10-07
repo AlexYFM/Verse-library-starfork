@@ -79,12 +79,26 @@ class PostNN(nn.Module):
 
         return x
 
+def positional_encoding(time: torch.Tensor, d_model: int) -> torch.Tensor:
+    pe = torch.zeros(time.size(0), d_model)
+    position = time.unsqueeze(1)  # reshape to (batch_size, 1)
+    
+    div_term = torch.exp(torch.arange(0, d_model, 2) * -(torch.log(torch.tensor(10000.0)) / d_model))
+    pe[:, 0::2] = torch.sin(position * div_term)
+    pe[:, 1::2] = torch.cos(position * div_term)
+    
+    return pe
+
 C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
 g = np.array([1,1,1,1])
 basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
 center = np.array([1.40,2.30])
+initial = StarSet(center, basis, C, g)
+d_model = 2*initial.dimension() # pretty sure I can't load in weights given different model as input size different, but I can try it
 
-input_size = 1    # Number of input features 
+
+# input_size = 1    # Number of input features 
+input_size = d_model    # Number of input features 
 hidden_size = 64     # Number of neurons in the hidden layers -- this may change, I know NeuReach has this at default 64
 # output_size = 1 + center.shape[0] # Number of output neurons -- this should stay 1 until nn outputs V instead of mu, whereupon it should reflect dimensions of starset
 # output_size = 1
@@ -101,12 +115,12 @@ def he_init(m):
 # Apply He initialization to the existing model
 model.apply(he_init)
 # Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
 num_epochs = 50 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 0.5
+lamb = 1
 
 T = 7
 ts = 0.05
@@ -115,6 +129,8 @@ initial_star = StarSet(center, basis, C, g)
 # Toy Function to learn: x^2+20
 
 times = torch.arange(0, T+ts, ts) # times to supply, right now this is fixed while S_t is random. can consider making this random as well
+pos = positional_encoding(times, d_model)
+
 
 C = torch.tensor(C, dtype=torch.float)
 g = torch.tensor(g, dtype=torch.float)
@@ -157,16 +173,17 @@ for epoch in range(num_epochs):
     ### I would really like to be able to do batch training though, figure out a way to make it work
     for i in range(len(times)):
         # Forward pass
-        t = torch.tensor([times[i]], dtype=torch.float)
-        flat_bases = model(t)
+        # t = torch.tensor([times[i]], dtype=torch.float)
+        # flat_bases = model(t)
+        flat_bases = model(pos[i])
         n = int(len(flat_bases) ** 0.5) 
-        basis = reshaped_output = flat_bases.view(-1, n, n)
+        basis = flat_bases.view(-1, n, n)
         
         # Compute the loss
         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-        size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+        size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1))/n)
         loss = lamb*cont_loss + size_loss
         loss.backward()
         # if i==50:
@@ -182,13 +199,17 @@ for epoch in range(num_epochs):
         print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
         print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
         for i in range(len(times)):
-            t = torch.tensor([times[i]], dtype=torch.float32)
-            r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
+            # t = torch.tensor([times[i]], dtype=torch.float32)
+            # r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
+            flat_bases = model(pos[i])
+            n = int(len(flat_bases) ** 0.5) 
+            basis = flat_bases.view(-1, n, n)
+            r_basis = basis + 1e-6*torch.eye(n) 
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
             size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
             loss = lamb*cont_loss + size_loss
-            print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {t.item():.1f}')
+            print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
 
 # test the new model
@@ -219,11 +240,11 @@ cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(basis
 bases = []
 for i in range(len(times)):
     # mu, center = model(test[i])[0].detach().numpy(), model(test[i])[1:].detach().numpy()
-    flat_bases = model(test[i]).detach()
+    flat_bases = model(pos[i])
     n = int(len(flat_bases) ** 0.5) 
-    basis = reshaped_output = flat_bases.view(-1, n, n)[0]
-    bases.append(basis.numpy())
-    stars.append(StarSet(centers[i], basis.numpy(), C.numpy(), g.numpy()))
+    basis = flat_bases.view(-1, n, n)[0]
+    bases.append(basis.detach().numpy())
+    stars.append(StarSet(centers[i], basis.detach().numpy(), C.numpy(), g.numpy()))
     points = torch.tensor(post_points[:, i, 1:]).float()
     contain = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))
     percent_contained.append(contain/(num_samples*10)*100)
