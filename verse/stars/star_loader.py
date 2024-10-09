@@ -249,8 +249,6 @@ def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
 ## make the below loop a function -- e.g., train(num_epochs)
 for epoch in range(num_epochs):
     # Zero the parameter gradients
-    optimizer.zero_grad()
-
     samples = sample_initial()
 
     ### do sample_containment and sample_contain here to get times
@@ -277,6 +275,7 @@ for epoch in range(num_epochs):
     ### I would really like to be able to do batch training though, figure out a way to make it work
     for i in range(len(sample_times)):
         # Forward pass
+        optimizer.zero_grad()
         pos = positional_encoding(sample_times, d_model)
         flat_bases = model(pos[i])
         #t = torch.tensor([sample_times[i]], dtype=torch.float)

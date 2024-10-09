@@ -146,8 +146,6 @@ def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
 
 for epoch in range(num_epochs):
     # Zero the parameter gradients
-    optimizer.zero_grad()
-
     samples = sample_initial()
 
     post_points = []
@@ -160,13 +158,6 @@ for epoch in range(num_epochs):
         points = post_points[:, i, 1:]
         new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         centers.append(torch.tensor(new_center, dtype=torch.float))
-    
-    # ### V_t is now always I -- check that mu should go to zero
-    # for i in range(len(times)):
-    #     points = post_points[:, i, 1:]
-    #     new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-    #     bases.append(torch.eye(points.shape[1], dtype=torch.double))
-    #     centers.append(torch.tensor(new_center))
 
     post_points = torch.tensor(post_points).float()
     ### for now, don't worry about batch training, just do single input, makes more sense to me to think of loss function like this
@@ -175,6 +166,7 @@ for epoch in range(num_epochs):
         # Forward pass
         # t = torch.tensor([times[i]], dtype=torch.float)
         # flat_bases = model(t)
+        optimizer.zero_grad()
         flat_bases = model(pos[i])
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)
