@@ -115,8 +115,8 @@ def he_init(m):
 # Apply He initialization to the existing model
 model.apply(he_init)
 # Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-5)
-scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
+scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
@@ -175,7 +175,7 @@ for epoch in range(num_epochs):
         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-        size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1))/n)
+        size_loss = torch.log1p(torch.linalg.det(r_basis@r_basis.mT))
         loss = lamb*cont_loss + size_loss
         loss.backward()
         # if i==50:
@@ -199,7 +199,7 @@ for epoch in range(num_epochs):
             r_basis = basis + 1e-6*torch.eye(n) 
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-            size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+            size_loss = torch.log1p(torch.linalg.det(r_basis@r_basis.mT))
             loss = lamb*cont_loss + size_loss
             print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
