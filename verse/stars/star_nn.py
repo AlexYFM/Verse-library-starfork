@@ -170,7 +170,7 @@ for epoch in range(num_epochs):
             r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
-            size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1))/n)
+            size_loss = -torch.log(torch.linalg.det(r_basis@r_basis.mT))
             loss = lamb*cont_loss + size_loss
             loss.backward()
             optimizer.step()
@@ -186,7 +186,7 @@ for epoch in range(num_epochs):
             r_basis = basis + 1e-6*torch.eye(n) 
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
-            size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+            size_loss = -torch.log(torch.linalg.det(r_basis@r_basis.mT))
             loss = lamb*cont_loss + size_loss
             print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
@@ -226,7 +226,7 @@ for i in range(len(times)):
     points = torch.tensor(post_points[:, i, 1:]).float()
     contain = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))
     percent_contained.append(contain/(num_samples*10)*100)
-    size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1)))
+    size_loss = -torch.log(torch.linalg.det(r_basis@r_basis.mT))
     bases.append(size_loss.detach().numpy())
     # stars.append(StarSet(center, bases[i], C.numpy(), mu*g.numpy()))
     # stars.append(StarSet(centers[i], bases[i], C.numpy(), np.diag(model(test[i]).detach().numpy())@g.numpy()))
