@@ -115,18 +115,9 @@ def sim_test_3d(
 
 basis = np.array([[1, 0], [0, 1]])
 center = np.array([3,3])
-
-#def pred(alpha_vec):
-    #print("in predicate")
 C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
 g = np.array([1,1,1,1])
-    # intermediate = C @ alpha_vec
-    #print(alpha_vec)
-    #print(np.multiply(C, alpha_vec))
-    #print(intermediate)
-    #if (np.less_equal(intermediate,g)).all() == True:
-    #    return True
-    #return False 
+
 
 def sim(vec, t):
     A = np.array([[0.1,0],[0,0.1]])
@@ -136,88 +127,6 @@ def sim(vec, t):
         vec = np.matmul(A, vec)
     return vec
 
-#basis_rot = np.array([[0.707,0.707],[-0.707,0.707]])
-
-
-# test = StarSet(center,basis, C, g)
-# basis = np.array([[1.0, 0.0], [0.0, 1.0]])
-# center = np.array([3.0,3.0])
-# C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
-# g = np.array([1,1,1,1])
-# test1 = StarSet(center,basis, C, g)
-# test_transformed = test1.post_cont(sim_simple, 1)
-# test_transformed2 = test1.post_cont(sim_ugly, 1)
-
-### my tests
-
-
-# p1 = np.array([2, 1.9])
-# p2 = np.array([4, 4.1])
-# ### from testing, know it works for rectangles, need to check more complex shapes
-# print(containment_poly(test, p1))
-# print(containment_poly(test, p2))
-# points = np.array(sample_star(test, 100))
-
-# plt.scatter(points[:, 0], points[:, 1])
-# plot_stars([test])
-
-# basis = np.array([[3, 1/3], [3, -1/4]]) * np.diag([0.01, 0.01])
-# # basis = np.array([[3, 1/3], [3, -1/4]]) * np.diag([0.1, 0.1])
-# # basis = np.array([[3, 1/3], [3, -1/4]]) 
-# # center = np.array([1.35,2.25]) ### vanderpol, everything else unless listed otherwise
-# center = np.array([-0.5, -0.5])
-
-# C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
-# # C = np.transpose(np.array([[1,-1,0,0, 1],[0,0,1,-1, 1]]))
-# # g = np.array([1,1,1,1, 1.5])
-# g = np.array([1,1,1,1])
-# test_nrect = StarSet(center, basis, C, g)
-
-# # # stars = gen_starsets_post_sim(test_nrect, sim_test)
-# # # stars = sim_star(test_nrect, sim_test, T=0.25)
-# # sim_star_vis(test_nrect, sim_test, T=1)
-# gen_starsets_post_sim_vis_nonit(test_nrect, sim_test, 7) ### may need to modify get verts 
-
-# basis = np.array([[3, 1/3, -1], [3, -1/4, 0], [3, 0, 1]]) * np.diag([0.1, 0.1, 0.1])
-# center = np.array([1, 1, 1])
-# C = np.transpose(np.array([[1,-1,0,0,0,0],[0,0,1,-1,0,0], [0,0,0,0,1,-1]]))
-# g = np.ones(6)
-# test_3d = StarSet(center, basis, C, g)
-# # plot_stars([test_3d])
-# new_stars = gen_starsets_post_sim_vis_nonit_nd(test_3d, sim_test_3d)
-
-# points = np.array(sample_star(test_nrect, 100))
-
-# post_points = []
-# for point in points:
-#     # print(point)
-#     post_points.append(sim_test(mode=None, initialCondition=point, time_bound=1, time_step=0.05).tolist()[-1][1:])
-#     # post_points.append(sim_test(mode=None, initialCondition=point, time_bound=7, time_step=0.05).tolist())
-# # new_center = np.array(sim_test(mode=None, initialCondition=center, time_bound=7, time_step=0.1).tolist()[-1][1:])
-# post_points = np.array(post_points)
-# # print(post_points.shape)
-
-# new_center = np.mean(post_points, axis=0)
-# scaler = StandardScaler()
-
-# pca = PCA(n_components=2) ### in the future, this process should be done in relation to dimension
-# pca.fit(post_points)
-# scale_factor = np.sqrt(pca.explained_variance_)
-# derived_basis: np.ndarray = (pca.components_.T @ np.diag(scale_factor)).T
-# db_unscaled = np.array([pca.components_[0], pca.components_[1]]) # this especially should be a loop
-# print(db_unscaled, '\n ---- \n', derived_basis, '\n ---- \n', pca.components_ @ np.diag(scale_factor), '\n ---- \n', np.diag(scale_factor))
-
-# # post_test = post_cont_pca(test_nrect, derived_basis, post_points)
-# post_test = gen_starset(post_points, test_nrect)
-# unbloated_test = StarSet(new_center, derived_basis, C, g)
-
-# # print(test_nrect.basis, test_nrect.center, test_nrect.C, test_nrect.g)
-# # print(post_test.basis, post_test.center, post_test.C, post_test.g)
-
-# # plt.quiver(*new_center, db_unscaled[0][0], db_unscaled[0][1], color='r', scale=3, label='PC1')
-# # plt.quiver(*new_center, db_unscaled[1][0], db_unscaled[1][1], color='g', scale=3, label='PC2')
-# plt.quiver(*new_center, derived_basis[0][0], derived_basis[0][1], color='r', scale=30, label='PC1')
-# plt.quiver(*new_center, derived_basis[1][0], derived_basis[1][1], color='g', scale=30, label='PC2')
-# plt.scatter(post_points[:, 0], post_points[:, 1])
-# plt.scatter(points[:, 0], points[:, 1])
-# plot_stars([post_test, unbloated_test, test_nrect])
+star = StarSet(center, basis, C, g)
+point = np.array([2, 4.00001])
+print(containment_poly(star, point))

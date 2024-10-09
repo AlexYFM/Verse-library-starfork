@@ -6,53 +6,7 @@ from starset import *
 from scipy.integrate import ode
 from sklearn.decomposition import PCA
 import pandas as pd
-
-### reinstall torch with cuda on this fork if necessary
-
-### synthetic dynamic and simulation function
-def dynamic_test(vec, t):
-    x, y = t # hack to access right variable, not sure how integrate, ode are supposed to work
-    ### vanderpol
-    x_dot = y
-    y_dot = (1 - x**2) * y - x
-
-    ### cardiac cell
-    # x_dot = -0.9*x*x-x*x*x-0.9*x-y+1
-    # y_dot = x-2*y
-
-    ### jet engine
-    # x_dot = -y-1.5*x*x-0.5*x*x*x-0.5
-    # y_dot = 3*x-y
-
-    ### brusselator 
-    # x_dot = 1+x**2*y-2.5*x
-    # y_dot = 1.5*x-x**2*y
-
-    ### bucking col -- change center to around -0.5 and keep basis size low
-    # x_dot = y
-    # y_dot = 2*x-x*x*x-0.2*y+0.1
-
-    ###non-descript convergent system
-    # x_dot = y
-    # y_dot = -5*x-5*x**3-y
-    return [x_dot, y_dot]
-
-def sim_test(
-    mode: List[str], initialCondition, time_bound, time_step, 
-) -> np.ndarray:
-    time_bound = float(time_bound)
-    number_points = int(np.ceil(time_bound / time_step))
-    t = [round(i * time_step, 10) for i in range(0, number_points)]
-    # note: digit of time
-    init = list(initialCondition)
-    trace = [[0] + init]
-    for i in range(len(t)):
-        r = ode(dynamic_test)
-        r.set_initial_value(init)
-        res: np.ndarray = r.integrate(r.t + time_step)
-        init = res.flatten().tolist()
-        trace.append([t[i] + time_step] + init)
-    return np.array(trace)
+from syn_sim import *
 
 class PostNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -89,6 +43,44 @@ def positional_encoding(time: torch.Tensor, d_model: int) -> torch.Tensor:
     
     return pe
 
+'''
+Given the hyperrectangle representation using the minima and maxima, some proportional 0<mu<1, and some number of initial sets
+Returns a set of initial sets in a list of starsets
+'''
+def sample_initial_set(mini: np.ndarray, maxa: np.ndarray, mu: float = 0.1, Ns: int = 10) -> List[StarSet]: #
+    if mu>1 or mu<0:
+        raise Exception('Invalid mu. Please choose a value of mu between 0 and 1')
+    if len(mini)!=len(maxa):
+        raise Exception('Vertices of hyperrectangle have different dimensions.')
+
+    diff = maxa-mini
+    dim = len(mini)
+    C, g = new_pred(dim)
+    basis = np.eye(dim)*np.diag(mu*diff/2) # each basis vector just e^i weighted with the difference vector in each dimension. Keeping this as fixed for now
+    X0 = []
+    for _ in range(Ns):
+        center = np.random.uniform(mini+mu/2*diff, maxa-mu*diff/2) 
+        # the above along with C, g, basis should make a vector centered in middle of hyperrectangle with min extent at minima and max extent at maxima
+        # essentially creating a zonotope representation of hyperrectangle
+        X0.append(StarSet(center, basis, C, g))
+    
+    return X0
+
+'''
+Returns a random interval between [0, T] that is length at most Nt and spacing ts
+'''
+def sample_times(T: float = 7, ts: int = 0.05, Nt: int = 100) -> torch.Tensor:
+    start: float
+    end: float
+    if T<=ts*Nt:
+        start = 0
+        end = T
+    else:
+        start = (torch.randint(0, int(T/ts)-Nt, (1,))).item()*ts
+        end = start+ts*Nt
+
+    return torch.arange(start, end, ts)
+
 C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
 g = np.array([1,1,1,1])
 basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
@@ -118,7 +110,7 @@ model.apply(he_init)
 optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-num_epochs = 50 # sample number of epoch -- can play with this/set this as a hyperparameter
+num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
 lamb = 1
 
@@ -139,10 +131,9 @@ S_0 = sample_star(initial_star, num_samples*10) # should eventually be a hyperpa
 np.random.seed()
 
 def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
-    samples = []
-    for _ in range(num_samples):
-        samples.append(S_0[np.random.randint(0, len(S_0))])
-    return samples
+    sample_indices = torch.randint(0, len(S_0), (num_samples,))
+    S = torch.tensor(S_0, dtype=float)
+    return S[sample_indices].tolist()
 
 for epoch in range(num_epochs):
     # Zero the parameter gradients
@@ -160,21 +151,9 @@ for epoch in range(num_epochs):
         points = post_points[:, i, 1:]
         new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         centers.append(torch.tensor(new_center, dtype=torch.float))
-    
-    # ### V_t is now always I -- check that mu should go to zero
-    # for i in range(len(times)):
-    #     points = post_points[:, i, 1:]
-    #     new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-    #     bases.append(torch.eye(points.shape[1], dtype=torch.double))
-    #     centers.append(torch.tensor(new_center))
 
     post_points = torch.tensor(post_points).float()
-    ### for now, don't worry about batch training, just do single input, makes more sense to me to think of loss function like this
-    ### I would really like to be able to do batch training though, figure out a way to make it work
     for i in range(len(times)):
-        # Forward pass
-        # t = torch.tensor([times[i]], dtype=torch.float)
-        # flat_bases = model(t)
         flat_bases = model(pos[i])
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)
@@ -186,21 +165,13 @@ for epoch in range(num_epochs):
         size_loss = torch.log1p(torch.sum(torch.norm(basis, dim=1))/n)
         loss = lamb*cont_loss + size_loss
         loss.backward()
-        # if i==50:
-        #     print(model.fc1.weight.grad, model.fc1.bias.grad)
         optimizer.step()
         
-        # print(f'Loss: {loss.item()}, mu: {mu.item()}, t: {t}')
-
     scheduler.step()
-    # Print loss periodically
-    # print(f'Loss: {loss.item():.4f}')
     if (epoch + 1) % 10 == 0:
         print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
-        print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
+        # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
         for i in range(len(times)):
-            # t = torch.tensor([times[i]], dtype=torch.float32)
-            # r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
             flat_bases = model(pos[i])
             n = int(len(flat_bases) ** 0.5) 
             basis = flat_bases.view(-1, n, n)
@@ -252,11 +223,6 @@ for i in range(len(times)):
     # stars.append(StarSet(centers[i], bases[i], C.numpy(), np.diag(model(test[i]).detach().numpy())@g.numpy()))
 
 percent_contained = np.array(percent_contained)
-# for t in test:
-#      print(model(t), t)
-# for b in bases:
-#      print(b)
-# plt.plot(test_times, model(test).detach().numpy())
 plot_stars_points_nonit(stars, post_points)
 
 results = pd.DataFrame({

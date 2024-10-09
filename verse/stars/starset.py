@@ -573,26 +573,8 @@ def containment_poly(star: StarSet, point: np.ndarray) -> bool:
     
     center, basis, C, g = star.center, star.basis, star.C, star.g
     # print(basis, basis.shape, C, C.shape)
-    alpha = RealVector('a', C.shape[1]) # holds list of alphas, should we be taking length from C or basis?
-    s = Solver()
-
-    ### add equality constraints
-    for i in range(star.dimension()):
-        exp = center[i]
-        for j in range(len(alpha)):
-            exp += alpha[j]*basis[j][i] # from the jth alpha/v, grab the ith dimension
-        # print(exp)
-        s.add(exp == point[i])
-
-    ### add alpha constraints
-    for i in range(C.shape[0]): # iterate over each row
-        exp = 0 # there's probably a better way to do this, but this works
-        for j in range(len(alpha)): # iterate over alphas
-            exp += C[i][j]*alpha[j]
-        # print(exp)
-        s.add(exp <= g[i])
-
-    return s.check()==sat
+    basis = basis+1e-6*np.eye(star.dimension())
+    return np.linalg.norm(np.maximum(C@np.linalg.inv(basis)@(point-center)-g, 0))==0
 
 ### N is the number of points, tol is how many misses consecutively we can see before raising an error  
 def sample_star(star: StarSet, N: int, tol: float = 0.2) -> List[List[float]]:
@@ -674,6 +656,7 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
 # alternatively this could just take the dimension of the starset
 def new_pred(old_star: StarSet) -> StarSet:
     cols = old_star.C.shape[1] # should be == old_star.dimension
+
     new_C = []
     ### this loop generates a zonotope predicate, i.e., each alpha gets [-1, 1] range 
     for i in range(cols): ### there' probably a faster way to do this, possibly using a lambda function
@@ -687,8 +670,27 @@ def new_pred(old_star: StarSet) -> StarSet:
                 col_i.append(0)
         new_C.append(col_i)
     new_C = np.transpose(np.array(new_C))
-    new_g = np.ones(old_star.g.shape)
+    new_g = np.ones(cols*2)
     return StarSet(old_star.center, old_star.basis, new_C, new_g)
+
+def new_pred(dimension: int) -> Tuple[np.ndarray, np.ndarray]:
+    cols = dimension # should be == old_star.dimension
+
+    new_C = []
+    ### this loop generates a zonotope predicate, i.e., each alpha gets [-1, 1] range 
+    for i in range(cols): ### there' probably a faster way to do this, possibly using a lambda function
+        col_i = []
+        for j in range(cols*2):
+            if i*2==j:
+                col_i.append(1)
+            elif i*2+1==j:
+                col_i.append(-1)
+            else:
+                col_i.append(0)
+        new_C.append(col_i)
+    new_C = np.transpose(np.array(new_C))
+    new_g = np.ones(cols*2)
+    return (new_C, new_g)
 
 ### from a set of points at a given time, generate a starset -- could possible reformat or remake this function to be more general
 ### expects an input with shape N (num points) x n (state dimenion) NOT N x n+1 (state dimension + time)

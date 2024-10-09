@@ -97,23 +97,23 @@ def positional_encoding(time: torch.Tensor, d_model: int) -> torch.Tensor:
 '''
 2D
 '''
-# C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
-# g = np.array([1,1,1,1])
-# basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
-# # basis = np.array([[1, 0], [0, 1]])
-# center = np.array([1.40,2.30])
+C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
+g = np.array([1,1,1,1])
+basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
+# basis = np.array([[1, 0], [0, 1]])
+center = np.array([1.40,2.30])
 
 '''
 3D
 '''
-C = np.transpose(np.array([[1,-1,0,0,0,0],[0,0,1,-1,0,0], [0,0,0,0,1,-1],]))
-g = np.array([1,1,1,1,1,1])
-basis = np.identity(3) * np.diag([.1, .1, .1])
-# basis = np.array([[1, 0], [0, 1]])
-center = np.array([1.40,2.30, 2])
+# C = np.transpose(np.array([[1,-1,0,0,0,0],[0,0,1,-1,0,0], [0,0,0,0,1,-1],]))
+# g = np.array([1,1,1,1,1,1])
+# basis = np.identity(3) * np.diag([.1, .1, .1])
+# # basis = np.array([[1, 0], [0, 1]])
+# center = np.array([1.40,2.30, 2])
 
 initial = StarSet(center, basis, C, g)
-d_model = 4*initial.dimension() # pretty sure I can't load in weights given different model as input size different, but I can try it
+d_model = 2*initial.dimension() # pretty sure I can't load in weights given different model as input size different, but I can try it
 
 
 # input_size = 1    # Number of input features 
@@ -131,16 +131,6 @@ def he_init(m):
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)  # Initialize biases to 0 (optional)
 
-'''
-Originally, we sample times uniformly from a sample. Call this sample u(t)=p(t). 
-However, during training there will likely be areas with worse containment due to the randomness of the training loop. 
-We can compute the containment using our containment penalty function and set any penatly>0 equivalent to be not contained. Repeat this for a given set of new points.
-In doing so we now have containment for every time t. Now, we can construct a new a distribution q(t) that gives more weight/importance to inputs with less containment.
-Currently, we do this by just taking 1-containment and normalizing. 
-Now that we have this new distribution, for one training epoch, we can from q(t) instead of u(t) to get time inputs that will most likely be the inputs with worse containment.
-As such, the model now trains temporarily with this new important distribution that should incentivize the model to consider these points more,
-which should decrease loss and thus increase containment as long as the hyperparameters have been tuned correctly.
-'''
 def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float = 0.05, num_samples: int = 100, plotting: bool = False, epoch: int = None) -> np.ndarray:
     model.eval()
 
@@ -149,8 +139,8 @@ def sample_containment(initial: StarSet, model: PostNN, T: float = 7, ts: float 
     S = sample_initial(num_samples*10) 
     post_points = []
     for point in S:
-            # post_points.append(sim_test(None, point, T, ts).tolist())
-            post_points.append(sim_test_3d(None, point, T, ts).tolist())
+            post_points.append(sim_test(None, point, T, ts).tolist())
+            # post_points.append(sim_test_3d(None, point, T, ts).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
 
     test_times = torch.arange(0, T+ts, ts)
@@ -214,13 +204,13 @@ def sample_contain(contain: np.ndarray, T: float = 7, ts: float = 0.05) -> torch
 # Apply He initialization to the existing model
 model.apply(he_init)
 # Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 1
-adp_rate = 0.2 
+lamb = 1.5
+adp_rate = 0.2
 
 T = 7
 ts = 0.05
@@ -255,15 +245,16 @@ for epoch in range(num_epochs):
 
     ### do sample_containment and sample_contain here to get times
     sample_times = times.clone().detach() 
-    if epoch % int(num_epochs*adp_rate) == 0: # try doing adp sampling every so often
+    if (epoch) % int(num_epochs*adp_rate) == 0: # try doing adp sampling every so often
         print(f'Doing adaptive sampling at on epoch {epoch}')
         sample_times = sample_contain(sample_containment(initial, model, epoch=epoch)) ### tie to important sampling
     model.train()
 
     post_points = []
+    ### instead of doing this every time, its probably more efficient to do this once at the beginning for a set of 10*num_samples points
     for point in samples:
-            # post_points.append(sim_test(None, point, torch.max(sample_times), ts).tolist())
-            post_points.append(sim_test_3d(None, point, T, ts).tolist())
+            post_points.append(sim_test(None, point, torch.max(sample_times), ts).tolist())
+            # post_points.append(sim_test_3d(None, point, T, ts).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
     
     centers = [] ### eventually this should be a NN output too
