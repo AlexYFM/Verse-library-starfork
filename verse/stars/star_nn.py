@@ -90,7 +90,7 @@ d_model = 2*initial.dimension() # pretty sure I can't load in weights given diff
 
 
 # input_size = 1    # Number of input features 
-input_size = d_model    # Number of input features 
+input_size = basis.flatten().size+d_model    # Number of input features 
 hidden_size = 64     # Number of neurons in the hidden layers -- this may change, I know NeuReach has this at default 64
 # output_size = 1 + center.shape[0] # Number of output neurons -- this should stay 1 until nn outputs V instead of mu, whereupon it should reflect dimensions of starset
 # output_size = 1
@@ -137,7 +137,6 @@ def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
 
 for epoch in range(num_epochs):
     # Zero the parameter gradients
-    optimizer.zero_grad()
 
     samples = sample_initial()
 
@@ -154,6 +153,7 @@ for epoch in range(num_epochs):
 
     post_points = torch.tensor(post_points).float()
     for i in range(len(times)):
+        optimizer.zero_grad()
         flat_bases = model(pos[i])
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)

@@ -239,8 +239,6 @@ def sample_initial(num_samples: int = num_samples) -> List[List[float]]:
 ## make the below loop a function -- e.g., train(num_epochs)
 for epoch in range(num_epochs):
     # Zero the parameter gradients
-    optimizer.zero_grad()
-
     samples = sample_initial()
 
     ### do sample_containment and sample_contain here to get times
@@ -267,6 +265,7 @@ for epoch in range(num_epochs):
     ### for now, don't worry about batch training, just do single input, makes more sense to me to think of loss function like this
     ### I would really like to be able to do batch training though, figure out a way to make it work
     for i in range(len(sample_times)):
+        optimizer.zero_grad()
         # Forward pass
         pos = positional_encoding(sample_times, d_model)
         flat_bases = model(pos[i])
