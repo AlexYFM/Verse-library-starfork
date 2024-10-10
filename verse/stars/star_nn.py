@@ -63,7 +63,8 @@ class PostNN(nn.Module):
         self.fc3 = nn.Linear(hidden_size, output_size)
         # self.relu = nn.ReLU()
         self.relu = nn.LeakyReLU()
-        self.tanh = nn.Tanh()
+        # self.relu = nn.ELU()
+        # self.relu = nn.Tanh()
 
     def forward(self, x):
         x = self.fc1(x)
@@ -115,12 +116,13 @@ def he_init(m):
 # Apply He initialization to the existing model
 model.apply(he_init)
 # Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
-num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
+num_epochs = 50 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 1
+lamb = 1.5
+alpha = 0.5
 
 T = 7
 ts = 0.05
@@ -160,8 +162,8 @@ for epoch in range(num_epochs):
         centers.append(torch.tensor(new_center, dtype=torch.float))
 
     post_points = torch.tensor(post_points).float()
-    ### for now, don't worry about batch training, just do single input, makes more sense to me to think of loss function like this
-    ### I would really like to be able to do batch training though, figure out a way to make it work
+    # optimizer.zero_grad()
+
     for i in range(len(times)):
         # Forward pass
         # t = torch.tensor([times[i]], dtype=torch.float)
@@ -175,7 +177,8 @@ for epoch in range(num_epochs):
         r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-        size_loss = torch.log1p(torch.linalg.det(r_basis@r_basis.mT))
+        # size_loss = torch.sqrt(torch.linalg.det(r_basis@r_basis.mT))+alpha*torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+        size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
         loss = lamb*cont_loss + size_loss
         loss.backward()
         # if i==50:
@@ -199,7 +202,8 @@ for epoch in range(num_epochs):
             r_basis = basis + 1e-6*torch.eye(n) 
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, i, 1:]]))/num_samples 
-            size_loss = torch.log1p(torch.linalg.det(r_basis@r_basis.mT))
+            # size_loss = torch.sqrt(torch.linalg.det(r_basis@r_basis.mT))+alpha*torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+            size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
             loss = lamb*cont_loss + size_loss
             print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
