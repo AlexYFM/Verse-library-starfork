@@ -12,8 +12,17 @@ from verse.utils.utils import sample_rect
 from typing_extensions import List, Callable
 
 from verse.analysis.dryvr import calc_bloated_tube
+from star_nn_utils import *
 
 # import jax
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from scipy.integrate import ode
+import pandas as pd
+from tqdm import tqdm
+
 class StarSet:
     """
     StarSet
@@ -903,3 +912,160 @@ def sim_star_vis(init_star: StarSet, sim: Callable, T: int = 7, ts: float = 0.05
     plt.show()
     # return stars
 
+### need to refactor this file so all the starset operations are separate from the definitions
+
+# C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
+# g = np.array([1,1,1,1])
+# basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
+# center = np.array([1.40,2.30])
+
+def sample_initial_set(mini: np.ndarray, maxa: np.ndarray, mu: float = 0.1, Ns: int = 10) -> List[StarSet]: #
+    if mu>1 or mu<0:
+        raise Exception('Invalid mu. Please choose a value of mu between 0 and 1')
+    if len(mini)!=len(maxa):
+        raise Exception('Vertices of hyperrectangle have different dimensions.')
+
+    diff = maxa-mini
+    dim = len(mini)
+    C, g = new_pred(dim)
+    basis = np.eye(dim)*np.diag(mu*diff/2) # each basis vector just e^i weighted with the difference vector in each dimension. Keeping this as fixed for now
+    X0 = []
+    for _ in range(Ns):
+        center = np.random.uniform(mini+mu/2*diff, maxa-mu*diff/2) 
+        # the above along with C, g, basis should make a vector centered in middle of hyperrectangle with min extent at minima and max extent at maxima
+        # essentially creating a zonotope representation of hyperrectangle
+        X0.append(StarSet(center, basis, C, g))
+    
+    return X0
+
+'''
+Returns a random interval between [0, T] that is length at most Nt and spacing ts
+'''
+def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
+    start: float
+    end: float
+    if T<=ts*Nt:
+        start = 0
+        end = T
+    else:
+        start = (torch.randint(0, int(T/ts)-Nt, (1,))).item()*ts
+        end = start+ts*Nt
+
+    return torch.arange(start, end, ts)
+
+'''
+TO-DO: should also have hyperparameters relating to max size of initial set and area where center can be
+'''
+def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 50, num_samples: int = 100, T: float = 7, ts: float=0.1, lamb: float = 7, lr=0.0005, Ns: int=10, Nt: int=100) -> None:
+    # Use SGD as the optimizer
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+
+    times = torch.arange(0, T+ts, ts) # times to supply, right now this is fixed while S_t is random. can consider making this random as well
+
+    C = torch.tensor(initial.C, dtype=torch.double)
+    g = torch.tensor(initial.g, dtype=torch.float)
+    # Training loop
+    d_model = 2*initial.dimension() #
+
+    pos = positional_encoding(times, d_model)
+
+    for epoch in tqdm(range(num_epochs), desc="Training Progress"):
+        # Zero the parameter gradients
+        X0 = sample_initial_set(np.array([1, 2]), np.array([2, 3]), 0.25, Ns)
+
+        for initial in range(Ns):
+            Xi: StarSet = X0[initial]
+            Xi_v = torch.tensor(Xi.basis, dtype=torch.float)
+            samples = sample_star(Xi, 25) # Neureach has Nx_0 = 10
+
+            centers = [] 
+            samples_times = sample_times(T, ts, Nt)
+            # print(f'Sample times range: {torch.min(samples_times)}, {torch.max(samples_times)}') # fix samples times so that they are actually multiples of ts
+
+            post_points = []
+            for point in samples:
+                post_points.append(sim(mode_label, point, torch.max(samples_times), ts).tolist())
+            post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
+
+            for i in range(len(samples_times)):
+                points = post_points[:, int(samples_times[i]//ts), 1:]
+                new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
+                centers.append(torch.tensor(new_center, dtype=torch.float))
+
+            post_points = torch.tensor(post_points).float()
+            for i in range(len(samples_times)):
+                optimizer.zero_grad()
+                flat_bases = model(torch.cat((pos[i], Xi_v.flatten()), dim=-1))
+                n = int(len(flat_bases) ** 0.5) 
+                basis = flat_bases.view(-1, n, n)
+                
+                # Compute the loss
+                r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
+                cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
+                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+                loss = lamb*cont_loss + size_loss
+                loss.backward()
+                optimizer.step()
+            
+        scheduler.step()
+        # if (epoch + 1) % 10 == 0:
+        #     print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
+        #     # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
+        #     for i in range(len(samples_times)):
+        #         flat_bases = model(torch.cat((pos[i], torch.tensor(initial.basis, dtype=torch.float).flatten()), dim=-1))
+        #         n = int(len(flat_bases) ** 0.5) 
+        #         basis = flat_bases.view(-1, n, n)
+        #         r_basis = basis + 1e-6*torch.eye(n) 
+        #         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+        #         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
+        #         size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+        #         loss = lamb*cont_loss + size_loss
+        #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
+
+def get_model(initial: StarSet, sim: Callable, input_size: int, output_size: int, mode_label: int = None, num_epochs: int = 50, num_samples: int = 100, T: float = 7, ts: float=0.1, lamb: float = 7, hidden_size: int = 64, ) -> PostNN:
+    input_size = initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
+    output_size = initial.basis.flatten()
+    model = create_model(input_size, hidden_size, output_size)
+    model_he_init(model)
+    train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lamb)
+    model.eval()
+    return model
+
+def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=200, T: float = 7, ts: float = 0.05) -> List[StarSet]:
+    S = sample_star(initial, num_samples)
+    post_points = []
+    for point in S:
+            post_points.append(sim(mode_label, point, T, ts).tolist())
+    post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
+
+    test_times = torch.arange(0, T+ts, ts)
+    test = torch.reshape(test_times, (len(test_times), 1))
+    bases = [] # now grab V_t 
+    centers = [] ### eventually this should be a NN output too
+    for i in range(len(test_times)):
+        points = post_points[:, i, 1:]
+        new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
+        pca: PCA = PCA(n_components=points.shape[1])
+        pca.fit(points)
+        scale = np.sqrt(pca.explained_variance_)
+        # print(pca.components_, scale)
+        derived_basis = (pca.components_.T @ np.diag(scale)).T # scaling each component by sqrt of dimension
+        # derived_basis = (pca.components_.T ).T # scaling each component by sqrt of dimension
+        # print(pca.components_[0]*scale[0], pca.components_[1]*scale[1])
+        # plt.arrow(new_center[0], new_center[1], *derived_basis[0]
+        bases.append(torch.tensor(derived_basis))
+        # bases.append(torch.eye(points.shape[1], dtype=torch.double))
+        centers.append(torch.tensor(new_center))
+    
+    C = torch.tensor(initial.C, dtype=torch.double)
+    g = torch.tensor(initial.g, dtype=torch.float)
+
+    stars = []
+    cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(bases[i].T)@(p-centers[i])-model(test[i])*g))
+    for i in range(len(test_times)):
+        # mu, center = model(test[i])[0].detach().numpy(), model(test[i])[1:].detach().numpy()
+        stars.append(StarSet(centers[i], bases[i], C.numpy(), torch.relu(model(test[i])).detach().numpy()*g.numpy()))
+
+    return stars
