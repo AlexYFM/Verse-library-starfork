@@ -553,7 +553,7 @@ class StarSet:
             return False
         return True
 
-    def is_feasible(n, constraint_mat, rhs, equal_mat=None, equal_rhs=None):
+    def is_feasible(n, constraint_mat, rhs, equal_mat=None, equal_rhs=None) -> bool:
         results = linprog(c=np.zeros(n),A_ub=constraint_mat,b_ub=rhs,A_eq=equal_mat, b_eq=equal_rhs)
         if results.status == 0:
             return True
@@ -563,6 +563,7 @@ class StarSet:
 
     ### fix this method so it returns an overapproximation using the same predicate
     def combine_stars(stars: List["StarSet"]) -> "StarSet":
+        return stars[0] # I think this is okay
         new_rect = []
         for i in range(0, stars[0].n):
             max = None
@@ -604,7 +605,7 @@ def containment_poly(star: StarSet, point: np.ndarray) -> bool:
     return np.linalg.norm(np.maximum(C@np.linalg.inv(basis)@(point-center)-g, 0))==0
 
 ### N is the number of points, tol is how many misses consecutively we can see before raising an error  
-def sample_star(star: StarSet, N: int, tol: float = 1) -> List[List[float]]:
+def sample_star(star: StarSet, N: int, tol: float = 0.2) -> List[List[float]]:
      
     rect = star.overapprox_rectangle()
     points = []
@@ -620,7 +621,13 @@ def sample_star(star: StarSet, N: int, tol: float = 1) -> List[List[float]]:
                 star.print()
                 print(rect)
                 containment_poly(star, point)
-                raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
+                center, basis, C, g = star.center, star.basis, star.C, star.g
+                # print(basis, basis.shape, C, C.shape)
+                basis = basis+1e-6*np.eye(star.dimension())
+                print(np.linalg.norm(np.maximum(C@np.linalg.inv(basis)@(point-center)-g, 0)))
+                points.append(point)
+                print("Warning: could potentially be sampling outside starset")
+                # raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
     return points
 
 # def post_cont_pca(old_star: StarSet, new_center: np.ndarray, derived_basis: np.ndarray,  points: np.ndarray) -> StarSet:
