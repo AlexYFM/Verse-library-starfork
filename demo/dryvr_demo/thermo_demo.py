@@ -39,9 +39,23 @@ if __name__ == "__main__":
 
     scenario.add_agent(car)
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
+    scenario.config.model_path = 'thermo_demo'
+    scenario.config.model_hparams = {
+        "big_initial_set": (np.array([75.5,0,0]), np.array([78.5,0,0])),
+        "initial_set_size": 0.1,
+    }
     # scenario.config.pca = False
     scenario.set_sensor(BaseStarSensor())
 
-    trace = scenario.verify(7, 0.1)
-    plot_reachtube_stars(trace)
-    # fig.show()
+    trace = scenario.verify(3.5, 0.1)
+    # plot_reachtube_stars(trace)
+    car1 = sum([trace.nodes[i].trace['test'] for i in range(len(trace.nodes))], [])
+    times = [star[0] for star in car1]
+    car1 = [star[1] for star in car1]
+    plot_stars_points(car1)
+    for i in range(len(car1)):
+        car = car1[i]
+        print(times[i], car.C, car.g, car.basis, car.center, '\n_______ \n')
+    # for star in car1:
+    #     print(star.center, star.basis, star.C, star.g, '\n --------')
+    plt.show()

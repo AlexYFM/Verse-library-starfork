@@ -25,6 +25,8 @@ from verse.parser.parser import find, ModePath, unparse
 from verse.agents.base_agent import BaseAgent
 from verse.automaton import GuardExpressionAst, ResetExpression
 
+# from verse.scenario import ScenarioConfig
+
 pp = functools.partial(pprint.pprint, compact=True, width=130)
 
 PathDiffs = List[Tuple[BaseAgent, ModePath]]
@@ -139,7 +141,9 @@ class Verifier:
         guard_checker=None,
         guard_str="",
         lane_map=None,
-        pca=True,
+        nn_enable=True,
+        model_path:str=None,
+        model_hparams:Dict=None,
     ):
         #this should return a list of stars for one time step along the horizon
         """
@@ -207,7 +211,9 @@ class Verifier:
             kvalue,
             sim_trace_num,
             lane_map=lane_map,
-            pca=pca,
+            nn_enable=nn_enable,
+            model_path=model_path,
+            model_hparams=model_hparams,
             )
 
            
@@ -446,7 +452,9 @@ class Verifier:
                         SIMTRACENUM,
                         combine_seg_length=consts.init_seg_length,
                         lane_map=consts.lane_map,
-                        pca=config.pca
+                        nn_enable=config.nn_enable,
+                        model_path=config.model_path,
+                        model_hparams=config.model_hparams
                     )
                     if config.incremental:
                         cache_tube_updates.extend(cache_tube_update)

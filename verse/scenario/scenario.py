@@ -45,9 +45,12 @@ class ScenarioConfig:
     """Heuristic. When enabled, try to use the local thread when some results are cached."""
     print_level: int = 1
     """Adjust print_level from 0 - 2 to print different information."""
-    pca: bool = True
-    """If true, uses the PCA algorithm to generate the starsets, otherwise, uses DryVR and rectangular over-approximations"""
-
+    nn_enable: bool = True
+    """If true, uses the NN algorithm to generate the starsets, otherwise, uses DryVR and rectangular over-approximations."""
+    model_path: str = None
+    """If not None, then NN algorithm either tries to load from model_path or trains a new model and saves it at model_path."""
+    model_hparams: Dict = None
+    """A dictionary containing hyperparameters like large initial set (required), learning rate, propertion of initial set to sample, etc."""
 
 class Scenario:
     """A simulation/verification scenario."""

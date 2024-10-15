@@ -12,7 +12,7 @@ from verse.utils.utils import sample_rect
 from typing_extensions import List, Callable
 
 from verse.analysis.dryvr import calc_bloated_tube
-from star_nn_utils import *
+from verse.stars.star_nn_utils import *
 
 # import jax
 import torch
@@ -22,6 +22,7 @@ import torch.nn.functional as F
 from scipy.integrate import ode
 import pandas as pd
 from tqdm import tqdm
+import os
 
 class StarSet:
     """
@@ -164,10 +165,10 @@ class StarSet:
     '''
     TO-DO: see if I can toggle which alg to use (DryVR, mine) based on some parameter, see if a new scenarioconfig can be added without much fuss
     '''
-    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,pca):
+    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,nn_enable,model_path,model_hparams):
         #get rectangle
 
-        if not pca:
+        if not nn_enable:
             initial_set = self.overapprox_rectangle()
             #get reachtube
             bloat_tube = calc_bloated_tube(
@@ -203,11 +204,24 @@ class StarSet:
             return star_tube
 
         else:
-            reach = gen_starsets_post_sim(self, sim_func, time_horizon, time_step, mode_label=mode_label)
+            # could potentially allow users to specify hyperparameters using a specific scenario config parameter, like model_hyperparams for example
+            if model_hparams is None:
+                raise Exception('No hyperparameters given to NN. Expected a dict with at least big_initial_set as a tuple form of a hyperparameter')
+            model: PostNN
+            if model_path is None:
+                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, model_path='default', model_hparams=model_hparams)
+            elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}"):
+                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, model_path=model_path, model_hparams=model_hparams)
+                print(f'Model trained and saved at {model_path}')
+            else:
+                model = create_model(self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
+                model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}")) # see if I can somehow get this to work at any level
+            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step)
             star_tube = []
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
 
+            print('length of reachtube: ', len(star_tube))
             return star_tube
 
 
@@ -914,11 +928,6 @@ def sim_star_vis(init_star: StarSet, sim: Callable, T: int = 7, ts: float = 0.05
 
 ### need to refactor this file so all the starset operations are separate from the definitions
 
-# C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
-# g = np.array([1,1,1,1])
-# basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
-# center = np.array([1.40,2.30])
-
 def sample_initial_set(mini: np.ndarray, maxa: np.ndarray, mu: float = 0.1, Ns: int = 10) -> List[StarSet]: #
     if mu>1 or mu<0:
         raise Exception('Invalid mu. Please choose a value of mu between 0 and 1')
@@ -956,23 +965,27 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
 '''
 TO-DO: should also have hyperparameters relating to max size of initial set and area where center can be
 '''
-def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 50, num_samples: int = 100, T: float = 7, ts: float=0.1, lamb: float = 7, lr=0.0005, Ns: int=10, Nt: int=100) -> None:
+def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
+          T: float = 7, ts: float=0.1, lamb: float = 7, lr: float=0.0005, Ns: int=10, Nt: int=100, big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
     # Use SGD as the optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     times = torch.arange(0, T+ts, ts) # times to supply, right now this is fixed while S_t is random. can consider making this random as well
 
-    C = torch.tensor(initial.C, dtype=torch.double)
+    C = torch.tensor(initial.C, dtype=torch.float)
     g = torch.tensor(initial.g, dtype=torch.float)
+    center = initial.center
     # Training loop
-    d_model = 2*initial.dimension() #
+    d_model = 2*initial.dimension() # should probably also let the user control this
 
     pos = positional_encoding(times, d_model)
 
     for epoch in tqdm(range(num_epochs), desc="Training Progress"):
         # Zero the parameter gradients
-        X0 = sample_initial_set(np.array([1, 2]), np.array([2, 3]), 0.25, Ns)
+        if big_initial_set is None or len(big_initial_set)!=2:
+            raise Exception("Big initial set is either None or has size not 2")
+        X0 = sample_initial_set(big_initial_set[0], big_initial_set[1], initial_set_size, Ns)
 
         for initial in range(Ns):
             Xi: StarSet = X0[initial]
@@ -1024,16 +1037,18 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
         #         loss = lamb*cont_loss + size_loss
         #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
-def get_model(initial: StarSet, sim: Callable, input_size: int, output_size: int, mode_label: int = None, num_epochs: int = 50, num_samples: int = 100, T: float = 7, ts: float=0.1, lamb: float = 7, hidden_size: int = 64, ) -> PostNN:
+def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
     input_size = initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
-    output_size = initial.basis.flatten()
+    output_size = initial.basis.flatten().size
     model = create_model(input_size, hidden_size, output_size)
     model_he_init(model)
-    train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lamb)
+    train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lamb, **model_hparams)
     model.eval()
+    os.makedirs("./verse/stars/models", exist_ok=True) # this directory too should be a scenario config thing
+    torch.save(model.state_dict(), f"./verse/stars/models/{model_path}")
     return model
 
-def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=200, T: float = 7, ts: float = 0.05) -> List[StarSet]:
+def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05) -> List[StarSet]:
     S = sample_star(initial, num_samples)
     post_points = []
     for point in S:
@@ -1041,31 +1056,18 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
 
     test_times = torch.arange(0, T+ts, ts)
-    test = torch.reshape(test_times, (len(test_times), 1))
-    bases = [] # now grab V_t 
-    centers = [] ### eventually this should be a NN output too
-    for i in range(len(test_times)):
-        points = post_points[:, i, 1:]
-        new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-        pca: PCA = PCA(n_components=points.shape[1])
-        pca.fit(points)
-        scale = np.sqrt(pca.explained_variance_)
-        # print(pca.components_, scale)
-        derived_basis = (pca.components_.T @ np.diag(scale)).T # scaling each component by sqrt of dimension
-        # derived_basis = (pca.components_.T ).T # scaling each component by sqrt of dimension
-        # print(pca.components_[0]*scale[0], pca.components_[1]*scale[1])
-        # plt.arrow(new_center[0], new_center[1], *derived_basis[0]
-        bases.append(torch.tensor(derived_basis))
-        # bases.append(torch.eye(points.shape[1], dtype=torch.double))
-        centers.append(torch.tensor(new_center))
-    
-    C = torch.tensor(initial.C, dtype=torch.double)
-    g = torch.tensor(initial.g, dtype=torch.float)
+    pos = positional_encoding(test_times, initial.dimension()*2)
+    # test = torch.reshape(test_times, (len(test_times), 1))
+    C, g = initial.C, initial.g
 
     stars = []
-    cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(bases[i].T)@(p-centers[i])-model(test[i])*g))
+
     for i in range(len(test_times)):
-        # mu, center = model(test[i])[0].detach().numpy(), model(test[i])[1:].detach().numpy()
-        stars.append(StarSet(centers[i], bases[i], C.numpy(), torch.relu(model(test[i])).detach().numpy()*g.numpy()))
+        points = post_points[:, i, 1:]
+        center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
+        flat_bases: torch.Tensor = model(torch.cat((pos[i], torch.tensor(initial.basis, dtype=torch.float).flatten()), dim=-1))
+        n = int(len(flat_bases) ** 0.5) 
+        basis = flat_bases.view(-1, n, n)[0]
+        stars.append(StarSet(center, basis.detach().numpy(), C, g))    
 
     return stars
