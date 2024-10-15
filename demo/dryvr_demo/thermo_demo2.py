@@ -33,7 +33,7 @@ if __name__ == "__main__":
             tuple([ThermoMode.ON]),
         ],
     )
-    traces = scenario.simulate(3.5, 0.05)
+    traces = scenario.simulate(3.5, 0.1)
     fig = go.Figure()
     fig = simulation_tree(traces, None, fig, 2, 1, [2, 1], "lines", "trace")
     fig.show()

@@ -222,6 +222,7 @@ class StarSet:
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
 
+            print(f'\n{self.print()}, {time_horizon}\n')
             print('length of reachtube: ', len(star_tube))
             return star_tube
 
@@ -560,7 +561,8 @@ class StarSet:
             return False
         raise Exception("linear program had unexpected result")
 
-    def combine_stars(stars):
+    ### fix this method so it returns an overapproximation using the same predicate
+    def combine_stars(stars: List["StarSet"]) -> "StarSet":
         new_rect = []
         for i in range(0, stars[0].n):
             max = None
@@ -591,6 +593,7 @@ class HalfSpace:
 
 ### from star_util
 
+
 def containment_poly(star: StarSet, point: np.ndarray) -> bool:
     if star.dimension() != point.shape[0]:
         raise ValueError(f'Dimension of point does not match the dimenions of the starset')
@@ -601,10 +604,8 @@ def containment_poly(star: StarSet, point: np.ndarray) -> bool:
     return np.linalg.norm(np.maximum(C@np.linalg.inv(basis)@(point-center)-g, 0))==0
 
 ### N is the number of points, tol is how many misses consecutively we can see before raising an error  
-def sample_star(star: StarSet, N: int, tol: float = 0.2) -> List[List[float]]:
-    
-    star = StarSet(np.round(star.center, 6), np.round(star.basis, 6), np.round(star.C, 6), np.round(star.g, 6))
- 
+def sample_star(star: StarSet, N: int, tol: float = 1) -> List[List[float]]:
+     
     rect = star.overapprox_rectangle()
     points = []
     misses = 0
@@ -1066,7 +1067,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
 
-        plt.scatter(points[:, 0], points[:,2])
+        plt.scatter(points[:, 0], points[:,1])
         
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         flat_bases: torch.Tensor = model(torch.cat((pos[i], torch.tensor(initial.basis, dtype=torch.float).flatten()), dim=-1))

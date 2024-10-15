@@ -790,7 +790,8 @@ class Verifier:
                 for agent_id in node.agent:
                     mode = node.mode[agent_id]
                     inits = node.init[agent_id]
-                    combined = combine_all(inits, reachability_method == ReachabilityMethod.STAR_SETS)
+                    combined = combine_all(inits, reachability_method == ReachabilityMethod.STAR_SETS) ###TODO: this function is very problematic fix IMMEDIATELY
+                    print("FIX ABOVE")
                     if self.config.incremental:
                         # CachedRTTrans
                         cached = self.trans_cache.check_hit(agent_id, mode, combined, node.init)
