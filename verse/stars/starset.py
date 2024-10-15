@@ -217,6 +217,7 @@ class StarSet:
                 model = create_model(self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
                 model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}")) # see if I can somehow get this to work at any level
             reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step)
+            print(f"Time horizon: {time_horizon}")
             star_tube = []
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
@@ -1064,6 +1065,9 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
 
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
+
+        plt.scatter(points[:, 0], points[:,2])
+        
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         flat_bases: torch.Tensor = model(torch.cat((pos[i], torch.tensor(initial.basis, dtype=torch.float).flatten()), dim=-1))
         n = int(len(flat_bases) ** 0.5) 
