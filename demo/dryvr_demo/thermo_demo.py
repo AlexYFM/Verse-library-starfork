@@ -49,13 +49,16 @@ if __name__ == "__main__":
 
     trace = scenario.verify(3.5, 0.1)
     # plot_reachtube_stars(trace)
+    if trace.nodes[-1] is None:
+        trace.nodes = trace.nodes[:-1]
     car1 = sum([trace.nodes[i].trace['test'] for i in range(len(trace.nodes))], [])
     times = [star[0] for star in car1]
     car1 = [star[1] for star in car1]
+
     plot_stars_points(car1)
-    for i in range(len(car1)):
-        car = car1[i]
-        print(times[i], car.C, car.g, car.basis, car.center, '\n_______ \n')
+    # for i in range(len(car1)):
+    #     car = car1[i]
+    #     print(times[i], car.C, car.g, car.basis, car.center, '\n_______ \n')
     # for star in car1:
     #     print(star.center, star.basis, star.C, star.g, '\n --------')
     plt.show()

@@ -23,7 +23,8 @@ from scipy.integrate import ode
 import pandas as pd
 from tqdm import tqdm
 import os
-
+import gurobipy as gp
+from gurobipy import GRB
 class StarSet:
     """
     StarSet
@@ -217,13 +218,13 @@ class StarSet:
                 model = create_model(self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
                 model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}")) # see if I can somehow get this to work at any level
             reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step)
-            print(f"Time horizon: {time_horizon}")
+            # print(f"Time horizon: {time_horizon}")
             star_tube = []
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
 
-            print(f'\n{self.print()}, {time_horizon}\n')
-            print('length of reachtube: ', len(star_tube))
+            # print(f'\n{self.print()}, {time_horizon}\n')
+            # print('length of reachtube: ', len(star_tube))
             return star_tube
 
 
@@ -561,11 +562,18 @@ class StarSet:
             return False
         raise Exception("linear program had unexpected result")
 
-    ### fix this method so it returns an overapproximation using the same predicate
+    ### for now, this only makes sense for zonotopes 
+    ### I think I can use convex combination of stars and some nonlinear optimizer to solve for c+Va=\Sum\lambda_i(c_i+V_ia) in the future
     def combine_stars(stars: List["StarSet"]) -> "StarSet":
-        return stars[0] # I think this is okay
+        m = len(stars)
+        if m==0:
+            raise Exception("Empty list of initial states")
+        if m==1:
+            return stars[0]
+
         new_rect = []
-        for i in range(0, stars[0].n):
+        n = stars[0].n
+        for i in range(n):
             max = None
             min = None
             for star in stars:
@@ -575,8 +583,19 @@ class StarSet:
                 if max == None or this_max > max:
                     max = this_max
             new_rect.append([min, max])
-        import polytope as pc
-        return StarSet.from_polytope(pc.box2poly(new_rect))
+
+        new_rect = np.array(new_rect).T
+        basis = []
+        for i in range(n):
+            diff = new_rect[1]-new_rect[0] #max - min
+            center = (new_rect[1]+new_rect[0])/2
+            basis = np.eye(n)*np.diag(diff/2)
+            C, g = new_pred(n) 
+
+        # for star in stars:
+        #     star.print()
+        # StarSet(center, basis, C, g).print()
+        return StarSet(center, basis, C, g)
 
     def print(self) -> None:
         print(f'{self.center}\n------\n{self.basis}\n------\n{self.C}\n------\n{self.g}')
@@ -618,15 +637,12 @@ def sample_star(star: StarSet, N: int, tol: float = 0.2) -> List[List[float]]:
         else:
             misses+=1
             if misses>int(N*tol):
-                star.print()
-                print(rect)
-                containment_poly(star, point)
                 center, basis, C, g = star.center, star.basis, star.C, star.g
-                # print(basis, basis.shape, C, C.shape)
-                basis = basis+1e-6*np.eye(star.dimension())
-                print(np.linalg.norm(np.maximum(C@np.linalg.inv(basis)@(point-center)-g, 0)))
                 points.append(point)
-                print("Warning: could potentially be sampling outside starset")
+                #star.print()
+                #print(rect)
+                #print(np.maximum(C@np.linalg.inv(basis+1e-6)@(point-center)-g, 0))
+                #print("Warning: could potentially be sampling outside starset")
                 # raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
     return points
 
@@ -1064,7 +1080,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             post_points.append(sim(mode_label, point, T, ts).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
 
-    test_times = torch.arange(0, T+ts, ts)
+    test_times = torch.arange(0, T, ts)
     pos = positional_encoding(test_times, initial.dimension()*2)
     # test = torch.reshape(test_times, (len(test_times), 1))
     C, g = initial.C, initial.g
@@ -1074,7 +1090,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
 
-        plt.scatter(points[:, 0], points[:,1])
+        # plt.scatter(points[:, 0], points[:,1])
         
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         flat_bases: torch.Tensor = model(torch.cat((pos[i], torch.tensor(initial.basis, dtype=torch.float).flatten()), dim=-1))
