@@ -47,15 +47,55 @@ if __name__ == "__main__":
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # scenario.config.pca = False
     scenario.set_sensor(BaseStarSensor())
+    scenario.config.model_path = 'cardiac_demo'
+    scenario.config.model_hparams = {
+        "big_initial_set": (np.array([-0.2,-0.2]), np.array([0.2,0.2])),
+        "initial_set_size": 0.1,
+    }
+    
     trace = scenario.verify(5, 0.1)
     # sim = scenario.simulate(10, 0.01)
     # pp_fix(reach_at_fix(trace, 0, 10))
 
     stars = []
-    for star in trace.nodes[0].trace['cell']:
-        stars.append(star[1])
-    plot_stars_points(stars)
-    print(stars[-1].basis[0][0])
-    plot_reachtube_stars(trace,filter=1)
-    # fig = simulation_tree(trace, None, fig, 1, 2, [1, 2], "fill", "trace")
+    for node in trace.nodes:
+        s_mode = []
+        for star in node.trace['cell']:
+            s_mode.append(star)
+        stars.append(s_mode)
+    # plot_stars_points(stars)
+    verts = []
+    i = 0
+    for s_mode in stars:
+        v_mode = []
+        # star[1].print()
+        for star in s_mode:
+            v_mode.append([star[0], *star[1].get_max_min(0)])
+            # if i==0 and star[0]>=1.0:
+            #     break
+            # if i==1 and star[0]>=2.5:
+            #     break
+            # if i==2 and star[0]>=3.5:
+            #     break
+        v_mode = np.array(v_mode)
+        verts.append(v_mode)
+        # print([star[0], *star[1].get_max_min(0)])
+#    print('Vertices:', verts)
+    # verts = np.array(verts)
+    #print(np.all(verts[:,2]>verts[:,1]))
+    for i in range(len(verts)):
+        v_mode = verts[i]
+        # plt.plot(v_mode[:, 0], v_mode[:, 1], 'b.')
+        # plt.plot(v_mode[:,0], v_mode[:, 2], 'r.')
+        mode = 'on' if i%2==0 else 'off'
+        color = 'blue' if i%2==0 else 'green'
+        plt.fill_between(v_mode[:, 0], v_mode[:, 1], v_mode[:, 2], color=color, alpha=0.5, label=mode)
+
+    plt.title('Cardiac Cell Model')
+    plt.ylabel('u')
+    plt.xlabel('Time (s)')
+    plt.legend()
     plt.show()
+    # plot_reachtube_stars(trace,filter=1)
+
+    #plt.show()

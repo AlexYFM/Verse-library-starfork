@@ -18,18 +18,6 @@ def tree_safe(tree: AnalysisTree):
         if node.assert_hits is not None:
             return False 
     return True
-
-    #   <dai equation="u_dot = -0.9*u*u-u*u*u-0.9*u-v+1"/>
-    #   <dai equation="v_dot = u-2*v"/>
-    #   <dai equation="u_out = u"/>
-    #   <dai equation="v_out = v"/>
-    #   <invariant equation="u&lt;0.5"/>
-    # </mode>
-    # <mode id="1" initial="False" name="stimOff">
-    #   <dai equation="u_dot = -0.9*u*u-u*u*u-0.9*u-v"/>
-    #   <dai equation="v_dot = u-2*v"/>
-    #   <dai equation="u_out = u"/>
-    #   <dai equation="v_out = v"/>
     
 class CellAgent(BaseAgent):
     def __init__(
