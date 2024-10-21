@@ -91,7 +91,7 @@ d_model = 2*initial.dimension() # pretty sure I can't load in weights given diff
 
 
 # input_size = 1    # Number of input features 
-input_size = basis.flatten().size+d_model    # Number of input features 
+input_size = initial.n+basis.flatten().size+d_model    # Number of input features -- right now hold this to x_0, V, t (P is known and fixed) 
 hidden_size = 64     # Number of neurons in the hidden layers -- this may change, I know NeuReach has this at default 64
 # output_size = 1 + center.shape[0] # Number of output neurons -- this should stay 1 until nn outputs V instead of mu, whereupon it should reflect dimensions of starset
 # output_size = 1
@@ -138,6 +138,7 @@ for epoch in tqdm(range(num_epochs), desc="Training Progress"):
     for initial in range(Ns):
         Xi: StarSet = X0[initial]
         Xi_v = torch.tensor(Xi.basis, dtype=torch.float)
+        Xi_xo = torch.tensor(Xi.center, dtype=torch.float)
         samples = sample_star(Xi, 25) # Neureach has Nx_0 = 10
 
         centers = [] 
@@ -157,7 +158,7 @@ for epoch in tqdm(range(num_epochs), desc="Training Progress"):
         post_points = torch.tensor(post_points).float()
         for i in range(len(samples_times)):
             optimizer.zero_grad()
-            flat_bases = model(torch.cat((pos[i], Xi_v.flatten()), dim=-1))
+            flat_bases = model(torch.cat((Xi_xo, Xi_v.flatten(), pos[i]), dim=-1))
             n = int(len(flat_bases) ** 0.5) 
             basis = flat_bases.view(-1, n, n)
             
@@ -175,7 +176,8 @@ for epoch in tqdm(range(num_epochs), desc="Training Progress"):
         print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
         # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
         for i in range(len(samples_times)):
-            flat_bases = model(torch.cat((pos[i], torch.tensor(initial_star.basis, dtype=torch.float).flatten()), dim=-1))
+            x0 = torch.tensor(initial_star.center, dtype=torch.float)
+            flat_bases = model(torch.cat((x0, torch.tensor(initial_star.basis, dtype=torch.float).flatten(), pos[i]), dim=-1))
             n = int(len(flat_bases) ** 0.5) 
             basis = flat_bases.view(-1, n, n)
             r_basis = basis + 1e-6*torch.eye(n) 

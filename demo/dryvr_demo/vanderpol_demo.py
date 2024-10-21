@@ -35,8 +35,12 @@ if __name__ == "__main__":
     C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
     g = np.array([1,1,1,1])
 
+    basis = basis * 100
+    initial = StarSet(center, basis, C, g)
+    initial_trans = StarSet(center-np.array([-1, 1]), basis@np.array([[-1, 1], [1, 0]]), np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]])), g)
+    plot_stars([initial, initial_trans])
     ### how do I instantiate a scenario with a starset instead of a hyperrectangle?
-
+    exit() 
     car.set_initial(
             # [[1.25, 2.25], [1.25, 2.25]],
             # [[1.55, 2.35], [1.55, 2.35]]

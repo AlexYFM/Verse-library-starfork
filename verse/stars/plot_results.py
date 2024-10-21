@@ -15,7 +15,7 @@ from star_nn_utils import *
 def eval(initial_star: StarSet, model_path: str, sim_test: Callable, T: int = 7, ts: int = 0.05, num_samples: int = 250) -> None: 
     model.load_state_dict(torch.load(model_path))
     model.eval()
-
+    
     # S_0 = sample_star(initial_star, num_samples*10) ### this is critical step -- this needs to be recomputed per training step
     S = sample_star(initial, num_samples)
     post_points = []
@@ -38,11 +38,12 @@ def eval(initial_star: StarSet, model_path: str, sim_test: Callable, T: int = 7,
     percent_contained = []
     cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(basis + 1e-6*torch.eye(n))@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
     bases = []
-    C, g = initial_star.C, initial_star.g
+    C, g, x0 = initial_star.C, initial_star.g, torch.tensor(initial_star.center, dtype=torch.float)
     C = torch.tensor(C, dtype=torch.float)
     g = torch.tensor(g, dtype=torch.float)
+    
     for i in range(len(test_times)):
-        flat_bases = model(torch.cat((pos[i], torch.tensor(initial_star.basis, dtype=torch.float).flatten()), dim=-1))
+        flat_bases = model(torch.cat((x0, torch.tensor(initial_star.basis, dtype=torch.float).flatten(), pos[i]), dim=-1)) # note that I changed the order here so that it matches the math/pseudocode
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)[0]
         stars.append(StarSet(centers[i], basis.detach().numpy(), C.numpy(), g.numpy()))
@@ -74,12 +75,12 @@ d_model = 2*initial.dimension()
 initial_star = StarSet(center, basis, C, g)
 
 
-input_size = basis.flatten().size+d_model 
+input_size = initial.n+basis.flatten().size+d_model
 hidden_size = 64     # Number of neurons in the hidden layers -- this may change, I know NeuReach has this at default 64
 output_size = basis.flatten().size
 
 model = PostNN(input_size, hidden_size, output_size)
-eval(initial_star, "./verse/stars/model_weights_org_1.pth", sim_test)
+eval(initial_star, "./verse/stars/model_weights_vdp.pth", sim_test)
 
 results = pd.read_csv('./verse/stars/nn_results.csv').to_numpy()
 plt.plot(results[:, 0], results[:, 1]/max(results[:,1]), label='Size Loss')
