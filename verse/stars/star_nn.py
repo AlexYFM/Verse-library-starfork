@@ -158,7 +158,7 @@ np.random.seed()
 
 for epoch in tqdm(range(num_epochs), desc="Training Progress"):
     # Zero the parameter gradients
-    X0 = sample_initial_same(initial_star, np.array([1, 2]), np.array([2, 3]), 1, Ns)
+    X0 = sample_initial_same(initial_star, np.array([-2, -3]), np.array([2, 3]), 1.5, Ns)
 
     for initial in range(Ns):
         Xi: StarSet = X0[initial]

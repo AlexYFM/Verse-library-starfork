@@ -854,8 +854,8 @@ def plot_stars_points(stars: List[StarSet], points: np.ndarray = None):
     for star in stars:
         x, y = np.array(star.get_verts())
         plt.plot(x, y, lw = 1)
-        centerx, centery = star.get_center_pt(0, 1)
-        plt.plot(centerx, centery, 'o')
+        # centerx, centery = star.get_center_pt(0, 1)
+        # plt.plot(centerx, centery, 'o')
     if points is not None:
         plt.scatter(points[:, 0], points[:, 1])
     # plt.show()
@@ -881,8 +881,8 @@ def plot_stars_points_nonit(stars: List[StarSet], points: np.ndarray):
     for star in stars:
         x, y = np.array(star.get_verts())
         plt.plot(x, y, lw = 1)
-        centerx, centery = star.get_center_pt(0, 1)
-        plt.plot(centerx, centery, 'o')
+        # centerx, centery = star.get_center_pt(0, 1)
+        # plt.plot(centerx, centery, 'o')
     for t in range(points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
         plt.scatter(points[:, t, 1], points[:, t, 2])
     # plt.show()
