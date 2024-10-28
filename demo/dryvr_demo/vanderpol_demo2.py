@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # modify mode list input
     scenario.set_init(
         [
-            [[1.25, 2.25], [1.55, 2.35]],
+            [[1.35, 2.25], [1.45, 2.35]],
         ],
         [
             tuple([AgentMode.Default]),
@@ -39,22 +39,22 @@ if __name__ == "__main__":
     traces = scenario.verify(
         7,
         0.05,
-        params={
-            "N_X0": 1,
-            "N_x0": 500,
-            "N_t": 100,
-            "epochs": 50,
-            "_lambda": 0.05,
-            "use_cuda": True,
-        },
+        # params={
+        #     "N_X0": 1,
+        #     "N_x0": 500,
+        #     "N_t": 100,
+        #     "epochs": 50,
+        #     "_lambda": 0.05,
+        #     "use_cuda": True,
+        # },
     )
 
     fig = go.Figure()
     fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
     fig = reachtube_tree_slice(traces, None, fig, 1, 2, [1, 2], "lines", "trace", plot_color=colors[1:])
-    for i in range(10):
-        sim = scenario.simulate(7, 0.05)
-        fig = simulation_tree(sim, None, fig, 1, 2, [1, 2], "lines", "trace", plot_color=colors[2:])
+    # for i in range(10):
+    #     sim = scenario.simulate(7, 0.05)
+    #     fig = simulation_tree(sim, None, fig, 1, 2, [1, 2], "lines", "trace", plot_color=colors[2:])
     fig.show()
     print("last", reach_at_fix(traces))
     print("Do fixed points exist for this scenario: ", fixed_points_fix(traces, 7, 0.05))

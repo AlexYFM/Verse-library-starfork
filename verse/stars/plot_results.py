@@ -54,7 +54,9 @@ def eval(initial_star: StarSet, model_path: str, sim_test: Callable, T: int = 7,
         bases.append(size_loss.detach().numpy())
 
     percent_contained = np.array(percent_contained)
-    plot_stars_points_nonit(stars, post_points)
+    # plot_stars_points_nonit(stars, post_points)
+    plot_stars_points(stars)
+    # plt.title(f'Accuracy: {np.mean(np.array(percent_contained))}%')
     plt.show()
 
     results = pd.DataFrame({
@@ -65,10 +67,15 @@ def eval(initial_star: StarSet, model_path: str, sim_test: Callable, T: int = 7,
 
     results.to_csv('./verse/stars/nn_results.csv', index=False)
 
+'Zonotope predicate'
 C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
 g = np.array([1,1,1,1])
+'Triangle predicate'
+# C = np.transpose(np.array([[-1,0,1],[0,-1,1]]))
+# g = np.array([1/3, 1/3, 1/3])
+
 basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
-center = np.array([1.50,2.40])
+center = np.array([1.40,2.30])
 initial = StarSet(center, basis, C, g)
 d_model = 2*initial.dimension() 
 

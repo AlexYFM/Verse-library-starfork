@@ -68,6 +68,26 @@ def sample_initial_set(mini: np.ndarray, maxa: np.ndarray, mu: float = 0.1, Ns: 
     return X0
 
 '''
+Similar to above but will keep the same predicate instead of forcing a zonotope.
+Specifically, it will sample a center between mini and maxa and scale the basis set by a maximum of max_mu
+while keeping C,g the same as the predicate. It will return Ns amount of starsets.
+Assumes that input starset has predicate that allows for + and - in each dimension (to create this, just offset the current predicate by c, C(a+c)<=g, where c is the center of the original predicate polytope)
+'''
+def sample_initial_same(initial: StarSet, mini: np.ndarray, maxa: np.ndarray, max_mu: float = 0.25, Ns: int = 10) -> List[StarSet]: #
+    if max_mu<0:
+        raise Exception('Invalid mu. Please choose a value of mu greater than 0')
+    if len(mini)!=len(maxa):
+        raise Exception('Vertices of hyperrectangle have different dimensions.')
+
+    C, g = initial.C, initial.g
+    X0 = []
+    for _ in range(Ns):
+        center = mini+np.random.rand(*mini.shape)*(maxa-mini)
+        basis = initial.basis*np.random.rand()*max_mu # think about if I also should allow this shape to be rotated
+        X0.append(StarSet(center, basis, C, g))
+    
+    return X0
+'''
 Returns a random interval between [0, T] that is length at most Nt and spacing ts
 '''
 def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
@@ -79,11 +99,15 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
     else:
         start = (torch.randint(0, int(T/ts)-Nt, (1,))).item()*ts
         end = start+ts*Nt
-
+        # may just want to allow oversampling of beginning and end
     return torch.arange(start, end, ts)
-
+'Zonotope predicate'
 C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
 g = np.array([1,1,1,1])
+'Triangle predicate'
+# C = np.transpose(np.array([[-1,0,1],[0,-1,1]]))
+# g = np.array([1/3, 1/3, 1/3])
+
 basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
 center = np.array([1.40,2.30])
 initial = StarSet(center, basis, C, g)
@@ -108,12 +132,12 @@ def he_init(m):
 # Apply He initialization to the existing model
 model.apply(he_init)
 # Use SGD as the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
 num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
-lamb = 1.5
+lamb = 3
 Ns = 10
 
 T = 7
@@ -128,12 +152,13 @@ pos = positional_encoding(times, d_model)
 C = torch.tensor(C, dtype=torch.float)
 g = torch.tensor(g, dtype=torch.float)
 # Training loop
-S_0 = sample_star(initial_star, num_samples*10) # should eventually be a hyperparameter as the second input, 
+# S_0 = sample_star(initial_star, num_samples*10) # should eventually be a hyperparameter as the second input, 
 np.random.seed()
+
 
 for epoch in tqdm(range(num_epochs), desc="Training Progress"):
     # Zero the parameter gradients
-    X0 = sample_initial_set(np.array([1, 2]), np.array([2, 3]), 0.25, Ns)
+    X0 = sample_initial_same(initial_star, np.array([1, 2]), np.array([2, 3]), 1, Ns)
 
     for initial in range(Ns):
         Xi: StarSet = X0[initial]
