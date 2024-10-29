@@ -790,7 +790,7 @@ class Verifier:
                 for agent_id in node.agent:
                     mode = node.mode[agent_id]
                     inits = node.init[agent_id]
-                    combined = combine_all(inits, reachability_method == ReachabilityMethod.STAR_SETS) ###TODO: this function is very problematic fix IMMEDIATELY
+                    combined = combine_all(inits, reachability_method == ReachabilityMethod.STAR_SETS) ###TODO: the combine_stars method still doesn't work that well, fix for more general case. At least, we can do PCA to find best starset
                     # print("FIX ABOVE")
                     if self.config.incremental:
                         # CachedRTTrans

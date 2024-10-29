@@ -211,12 +211,13 @@ class StarSet:
             model: PostNN
             if model_path is None:
                 model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, model_path='default', model_hparams=model_hparams)
-            elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}"):
+            elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}.pth"):
                 model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, model_path=model_path, model_hparams=model_hparams)
                 print(f'Model trained and saved at {model_path}')
             else:
-                model = create_model(self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
-                model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}")) # see if I can somehow get this to work at any level
+                ### needs updating 
+                model = create_model(self.n+self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
+                model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}.pth")) # see if I can somehow get this to work at any level
             reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step)
             # print(f"Time horizon: {time_horizon}")
             star_tube = []
@@ -953,21 +954,18 @@ def sim_star_vis(init_star: StarSet, sim: Callable, T: int = 7, ts: float = 0.05
 
 ### need to refactor this file so all the starset operations are separate from the definitions
 
-def sample_initial_set(mini: np.ndarray, maxa: np.ndarray, mu: float = 0.1, Ns: int = 10) -> List[StarSet]: #
-    if mu>1 or mu<0:
-        raise Exception('Invalid mu. Please choose a value of mu between 0 and 1')
+def sample_initial_center(initial: StarSet, mini: np.ndarray, maxa: np.ndarray, max_mu: float = 0.25, Ns: int = 10) -> List[StarSet]: #
+    if max_mu<0:
+        raise Exception('Invalid mu. Please choose a value of mu greater than 0')
     if len(mini)!=len(maxa):
         raise Exception('Vertices of hyperrectangle have different dimensions.')
 
-    diff = maxa-mini
-    dim = len(mini)
-    C, g = new_pred(dim)
-    basis = np.eye(dim)*np.diag(mu*diff/2) # each basis vector just e^i weighted with the difference vector in each dimension. Keeping this as fixed for now
+    # print(initial)
+    C, g = initial.C, initial.g
     X0 = []
     for _ in range(Ns):
-        center = np.random.uniform(mini+mu/2*diff, maxa-mu*diff/2) 
-        # the above along with C, g, basis should make a vector centered in middle of hyperrectangle with min extent at minima and max extent at maxima
-        # essentially creating a zonotope representation of hyperrectangle
+        center = mini+np.random.rand(*mini.shape)*(maxa-mini)
+        basis = initial.basis*np.random.rand()*max_mu # think about if I also should allow this shape to be rotated
         X0.append(StarSet(center, basis, C, g))
     
     return X0
@@ -988,10 +986,11 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
     return torch.arange(start, end, ts)
 
 '''
-TO-DO: should also have hyperparameters relating to max size of initial set and area where center can be
+TODO: 
 '''
 def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
-          T: float = 7, ts: float=0.1, lamb: float = 7, lr: float=0.0005, Ns: int=10, Nt: int=100, big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
+          T: float = 7, ts: float=0.1, lamb: float = 7, lr: float=0.0005, Ns: int=10, Nt: int=100, 
+          big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
     # Use SGD as the optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
@@ -1000,7 +999,6 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
 
     C = torch.tensor(initial.C, dtype=torch.float)
     g = torch.tensor(initial.g, dtype=torch.float)
-    center = initial.center
     # Training loop
     d_model = 2*initial.dimension() # should probably also let the user control this
 
@@ -1010,11 +1008,12 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
         # Zero the parameter gradients
         if big_initial_set is None or len(big_initial_set)!=2:
             raise Exception("Big initial set is either None or has size not 2")
-        X0 = sample_initial_set(big_initial_set[0], big_initial_set[1], initial_set_size, Ns)
+        X0 = sample_initial_center(initial, big_initial_set[0], big_initial_set[1], initial_set_size, Ns)
 
-        for initial in range(Ns):
-            Xi: StarSet = X0[initial]
+        for i in range(Ns):
+            Xi: StarSet = X0[i]
             Xi_v = torch.tensor(Xi.basis, dtype=torch.float)
+            Xi_xo = torch.tensor(Xi.center, dtype=torch.float)
             samples = sample_star(Xi, 25) # Neureach has Nx_0 = 10
 
             centers = [] 
@@ -1034,7 +1033,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
             post_points = torch.tensor(post_points).float()
             for i in range(len(samples_times)):
                 optimizer.zero_grad()
-                flat_bases = model(torch.cat((pos[i], Xi_v.flatten()), dim=-1))
+                flat_bases = model(torch.cat((Xi_xo, Xi_v.flatten(), pos[i]), dim=-1))
                 n = int(len(flat_bases) ** 0.5) 
                 basis = flat_bases.view(-1, n, n)
                 
@@ -1063,14 +1062,14 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
         #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
 def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
-    input_size = initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
+    input_size = initial.n+initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
     output_size = initial.basis.flatten().size
     model = create_model(input_size, hidden_size, output_size)
     model_he_init(model)
     train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lamb, **model_hparams)
     model.eval()
     os.makedirs("./verse/stars/models", exist_ok=True) # this directory too should be a scenario config thing
-    torch.save(model.state_dict(), f"./verse/stars/models/{model_path}")
+    torch.save(model.state_dict(), f"./verse/stars/models/{model_path}.pth")
     return model
 
 def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05) -> List[StarSet]:
@@ -1084,18 +1083,18 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     pos = positional_encoding(test_times, initial.dimension()*2)
     # test = torch.reshape(test_times, (len(test_times), 1))
     C, g = initial.C, initial.g
+    x0 = torch.tensor(initial.center, dtype=torch.float)
 
     stars = []
 
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
-
-        # plt.scatter(points[:, 0], points[:,1])
-        
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-        flat_bases: torch.Tensor = model(torch.cat((pos[i], torch.tensor(initial.basis, dtype=torch.float).flatten()), dim=-1))
+        flat_bases: torch.Tensor = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), pos[i]), dim=-1))
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)[0]
         stars.append(StarSet(center, basis.detach().numpy(), C, g))    
+
+        # plt.scatter(points[:, 0], points[:,1]) # just for plotting
 
     return stars
