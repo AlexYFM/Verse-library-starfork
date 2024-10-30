@@ -35,7 +35,6 @@ def plot_reachtube_stars(
         i = (i+1)%7
     plt.show()
 
-
 def plot_reach_tube(traces, agent_id, freq = 100):
     trace = np.array(traces[agent_id], freq)
     plot_agent_trace(trace)
@@ -48,8 +47,6 @@ def plot_agent_trace(trace, freq=100):
             centerx, centery = trace[i][1].get_center_pt(0, 1)
             plt.plot(centerx, centery, 'o', color = colors[i%7])
     plt.show()
-    
-
 
 def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
     queue = [root]
@@ -74,8 +71,6 @@ def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
             queue += node.child
         else:
             print("KB: concerning issue, where is an agent??")
-
-
 
 def sample_trace(root, sample_rate: int = 1):
     queue = [root]
@@ -103,3 +98,31 @@ def sample_trace(root, sample_rate: int = 1):
                 ]
             queue += node.child
     return root
+
+def plot_stars_time(root: AnalysisTree, dim: int=0, color: str = 'b', title: str = 'Star Set Reachtube', **kwargs) -> None:
+    stars = []
+    agent_list = list(root.root.agent.keys())
+    agent = agent_list[0] # for now, just consider single agent case
+    
+    for node in root.nodes:
+        s_mode = []
+        for star in node.trace[agent]:
+            s_mode.append(star)
+        stars.append(s_mode)
+    verts = []
+
+    for s_mode in stars: # for each mode
+        v_mode = [] # get the vertices
+        for star in s_mode:
+            v_mode.append([star[0], *star[1].get_max_min(dim)]) # each vertex is actually the time index and the min/max of that dimension at that time
+        v_mode = np.array(v_mode)
+        verts.append(v_mode)
+
+    for i in range(len(verts)):
+        v_mode = verts[i]
+        plt.fill_between(v_mode[:, 0], v_mode[:, 1], v_mode[:, 2], color=color, alpha=0.5)
+
+    plt.title(title)
+    plt.ylabel(f'Dimension {dim}')
+    plt.xlabel('Time (s)')
+    plt.show()

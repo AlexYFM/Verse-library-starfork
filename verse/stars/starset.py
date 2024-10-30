@@ -218,7 +218,7 @@ class StarSet:
                 ### needs updating 
                 model = create_model(self.n+self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
                 model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}.pth")) # see if I can somehow get this to work at any level
-            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step)
+            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, verbose=True)
             # print(f"Time horizon: {time_horizon}")
             star_tube = []
             for i in range(len(reach)):
@@ -1072,7 +1072,7 @@ def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epoch
     torch.save(model.state_dict(), f"./verse/stars/models/{model_path}.pth")
     return model
 
-def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05, verbose: bool = True) -> List[StarSet]:
+def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05, verbose: bool = False) -> List[StarSet]:
     S = sample_star(initial, num_samples)
     post_points = []
     for point in S:
