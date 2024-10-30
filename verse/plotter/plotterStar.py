@@ -102,27 +102,30 @@ def sample_trace(root, sample_rate: int = 1):
 def plot_stars_time(root: AnalysisTree, dim: int=0, color: str = 'b', title: str = 'Star Set Reachtube', **kwargs) -> None:
     stars = []
     agent_list = list(root.root.agent.keys())
-    agent = agent_list[0] # for now, just consider single agent case
     
-    for node in root.nodes:
-        s_mode = []
-        for star in node.trace[agent]:
-            s_mode.append(star)
-        stars.append(s_mode)
-    verts = []
+    j = 0
+    for agent in agent_list:
+        for node in root.nodes:
+            s_mode = []
+            for star in node.trace[agent]:
+                s_mode.append(star)
+            stars.append(s_mode)
+        verts = []
 
-    for s_mode in stars: # for each mode
-        v_mode = [] # get the vertices
-        for star in s_mode:
-            v_mode.append([star[0], *star[1].get_max_min(dim)]) # each vertex is actually the time index and the min/max of that dimension at that time
-        v_mode = np.array(v_mode)
-        verts.append(v_mode)
+        for s_mode in stars: # for each mode
+            v_mode = [] # get the vertices
+            for star in s_mode:
+                v_mode.append([star[0], *star[1].get_max_min(dim)]) # each vertex is actually the time index and the min/max of that dimension at that time
+            v_mode = np.array(v_mode)
+            verts.append(v_mode)
 
-    for i in range(len(verts)):
-        v_mode = verts[i]
-        plt.fill_between(v_mode[:, 0], v_mode[:, 1], v_mode[:, 2], color=color, alpha=0.5)
-
+        for i in range(len(verts)):
+            v_mode = verts[i]
+            plt.fill_between(v_mode[:, 0], v_mode[:, 1], v_mode[:, 2], color=colors[j%7], alpha=0.5, label=f'Agent {agent}')
+        j+=1
+    
     plt.title(title)
     plt.ylabel(f'Dimension {dim}')
     plt.xlabel('Time (s)')
+    plt.legend()
     plt.show()
