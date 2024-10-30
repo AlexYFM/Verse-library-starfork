@@ -1072,7 +1072,7 @@ def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epoch
     torch.save(model.state_dict(), f"./verse/stars/models/{model_path}.pth")
     return model
 
-def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05) -> List[StarSet]:
+def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05, verbose: bool = True) -> List[StarSet]:
     S = sample_star(initial, num_samples)
     post_points = []
     for point in S:
@@ -1086,6 +1086,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     x0 = torch.tensor(initial.center, dtype=torch.float)
 
     stars = []
+    accuracy = []
 
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
@@ -1095,6 +1096,21 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
         basis = flat_bases.view(-1, n, n)[0]
         stars.append(StarSet(center, basis.detach().numpy(), C, g))    
 
+        if verbose:
+            accuracy.append(compute_accuracy(initial, points, basis))    
         # plt.scatter(points[:, 0], points[:,1]) # just for plotting
 
+    accuracy = np.array(accuracy)
+
+    if verbose:
+        print(f'Average accuracy: {np.mean(accuracy)}, Worst Accuracy: {np.min(accuracy)}') # this will get printed out for each node -- to not have this behavior, just store it in some global
+    
     return stars
+
+def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: torch.Tensor):
+    n = initial.n
+    new_center = np.mean(points, axis=0)
+    r_basis = 1e-6+np.eye(n)+new_basis.detach().numpy()
+    cont = lambda p: np.linalg.norm(np.maximum(initial.C@np.linalg.inv(r_basis)@(p-new_center)-initial.g, 0))
+    contain = np.sum(np.stack([cont(point) == 0 for point in points]))
+    return contain/len(points)
