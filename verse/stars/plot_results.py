@@ -74,7 +74,7 @@ g = np.array([1,1,1,1])
 # C = np.transpose(np.array([[-1,0,1],[0,-1,1]]))
 # g = np.array([1/3, 1/3, 1/3])
 
-basis = np.array([[1, 0], [0, 1]]) * np.diag([.025, .025])
+basis = np.array([[1, 0], [0, 1]]) * np.diag([.1, .1])
 center = np.array([1.4,2.3])
 initial = StarSet(center, basis, C, g)
 d_model = 2*initial.dimension() 

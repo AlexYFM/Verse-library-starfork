@@ -3,6 +3,11 @@ from verse.map.example_map.map_tacas import M1
 from verse.scenario.scenario import Benchmark
 from enum import Enum, auto
 from verse.plotter.plotter2D import *
+from verse import Scenario, ScenarioConfig
+from verse.analysis.verifier import ReachabilityMethod
+from verse.stars.starset import *
+
+from verse.sensor.base_sensor_stars import *
 
 import sys
 import plotly.graph_objects as go
@@ -30,28 +35,38 @@ if __name__ == "__main__":
 
     script_dir = os.path.realpath(os.path.dirname(__file__))
     input_code_name = os.path.join(script_dir, "example_controller4.py")
-    bench = Benchmark(sys.argv)
-    bench.agent_type = "C"
-    bench.noisy_s = "No"
-    bench.scenario.add_agent(
-        CarAgent(
-            "car1",
-            file_name=input_code_name,
-            initial_state=[[0, -0.5, 0, 1.0], [0.01, 0.5, 0, 1.0]],
-            initial_mode=(AgentMode.Normal, TrackMode.T1),
-        )
+    car = CarAgent('car1', file_name=input_code_name)
+    car2 = NPCAgent('car2')
+    scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False))
+    scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
+
+    scenario.config.model_path = 'highway'
+
+    scenario.config.model_hparams = {
+        "big_initial_set": (np.array([0,-0.5,0,0]), np.array([15,0.5,0,0])),
+        "initial_set_size": 1,
+    }
+
+    center = np.array([0.005, 0, 0, 1])
+    basis = np.eye(4)*np.diag([0.005, 0.5, 0, 0])
+    C, g = new_pred(4)
+    car.set_initial(
+        initial_state=StarSet(center, basis, C,g),
+        initial_mode=(AgentMode.Normal, TrackMode.T1)
     )
-    bench.scenario.add_agent(
-        NPCAgent(
-            "car2",
-            initial_state=[[15, -0.3, 0, 0.5], [15, 0.3, 0, 0.5]],
-            initial_mode=(AgentMode.Normal, TrackMode.T1),
-        )
+
+    center2=np.array([15, 0, 0, 0.5])
+    basis2 = np.eye(4)*np.diag([0, 0.3, 0, 0])
+    car2.set_initial(
+        initial_state=StarSet(center2, basis2, C, g),
+        initial_mode=(AgentMode.Normal, TrackMode.T1)
     )
-    # scenario.add_agent(NPCAgent('car3', initial_state=[[35, -3.3, 0, 0.5], [35, -2.7, 0, 0.5]], initial_mode=(AgentMode.Normal, TrackMode.T2)))
-    # scenario.add_agent(NPCAgent('car4', initial_state=[[30, -0.5, 0, 0.5], [30, 0.5, 0, 0.5]], initial_mode=(AgentMode.Normal, TrackMode.T1)))
+
+    scenario.add_agent(car)
+    scenario.add_agent(car2)
     tmp_map = M1()
-    bench.scenario.set_map(tmp_map)
+    scenario.set_map(tmp_map)
+    scenario.set_sensor(BaseStarSensor())
     # traces = scenario.simulate(70, 0.05)
     # # traces.dump('./output1.json')
     # fig = go.Figure()
@@ -73,14 +88,5 @@ if __name__ == "__main__":
     #                         )
     # traces.dump(os.path.join(script_dir, "output6_neureach.json")
     time_step = 0.05
-    if bench.config.compare:
-        traces1, traces2 = bench.compare_run(40, time_step)
-        exit(0)
-    traces = bench.run(40, time_step)
-    if bench.config.dump:
-        traces.dump(os.path.join(script_dir, "output6_dryvr.json"))
-    if bench.config.plot or 1:
-        fig = go.Figure()
-        fig = reachtube_tree(traces, tmp_map, fig, 1, 2, [1, 2], "lines", "trace")
-        fig.show()
-    bench.report()
+    trace = scenario.verify(40,0.05)
+    plot_stars_time(trace)

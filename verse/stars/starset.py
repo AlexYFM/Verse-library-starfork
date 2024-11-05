@@ -210,15 +210,15 @@ class StarSet:
                 raise Exception('No hyperparameters given to NN. Expected a dict with at least big_initial_set as a tuple form of a hyperparameter')
             model: PostNN
             if model_path is None:
-                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, model_path='default', model_hparams=model_hparams)
+                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, model_path='default', model_hparams=model_hparams)
             elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}.pth"):
-                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, model_path=model_path, model_hparams=model_hparams)
+                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, model_path=model_path, model_hparams=model_hparams)
                 print(f'Model trained and saved at {model_path}')
             else:
                 ### needs updating 
                 model = create_model(self.n+self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
                 model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}.pth")) # see if I can somehow get this to work at any level
-            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, verbose=True)
+            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True)
             # print(f"Time horizon: {time_horizon}")
             star_tube = []
             for i in range(len(reach)):
@@ -989,7 +989,7 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
 TODO: 
 '''
 def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
-          T: float = 7, ts: float=0.1, lamb: float = 7, lr: float=0.0005, Ns: int=10, Nt: int=100, 
+          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, lr: float=0.0005, Ns: int=10, Nt: int=100, 
           big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
     # Use SGD as the optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
@@ -1022,7 +1022,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
 
             post_points = []
             for point in samples:
-                post_points.append(sim(mode_label, point, torch.max(samples_times), ts).tolist())
+                post_points.append(sim(mode_label, point, torch.max(samples_times), ts, lane_map).tolist())
             post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
 
             for i in range(len(samples_times)):
@@ -1061,22 +1061,22 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
         #         loss = lamb*cont_loss + size_loss
         #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
-def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
+def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
     input_size = initial.n+initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
     output_size = initial.basis.flatten().size
     model = create_model(input_size, hidden_size, output_size)
     model_he_init(model)
-    train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lamb, **model_hparams)
+    train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lane_map, lamb, **model_hparams)
     model.eval()
     os.makedirs("./verse/stars/models", exist_ok=True) # this directory too should be a scenario config thing
     torch.save(model.state_dict(), f"./verse/stars/models/{model_path}.pth")
     return model
 
-def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05, verbose: bool = False) -> List[StarSet]:
+def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False) -> List[StarSet]:
     S = sample_star(initial, num_samples)
     post_points = []
     for point in S:
-            post_points.append(sim(mode_label, point, T, ts).tolist())
+            post_points.append(sim(mode_label, point, T, ts, lane_map).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
 
     test_times = torch.arange(0, T, ts)

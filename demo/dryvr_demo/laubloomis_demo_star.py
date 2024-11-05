@@ -37,18 +37,15 @@ if __name__ == "__main__":
     # scenario.config.pca = False
     basis = np.eye(7)*np.diag([W for _ in range(7)])
     center = np.array([1.2,1.05,1.5,2.4,1,0.1,0.45])
-
     C, g = new_pred(7)
     # C = np.transpose(np.array([[1,-1,0,0,0,0],[0,0,1,-1,0,0], [0,0,0,0,1,-1]]))
     # g = np.array([1,1,1,1,1,1])
     scenario.set_sensor(BaseStarSensor())
     agent.set_initial(
-        
             StarSet(center, basis, C, g)
         ,
         
             (AgentMode.Default, )
-        
     )
     scenario.add_agent(agent)
 

@@ -138,6 +138,7 @@ scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 num_epochs = 30 # sample number of epoch -- can play with this/set this as a hyperparameter
 num_samples = 100 # number of samples per time step
 lamb = 3
+lamb_fit = 3
 Ns = 10
 
 T = 7
@@ -190,9 +191,11 @@ for epoch in tqdm(range(num_epochs), desc="Training Progress"):
             # Compute the loss
             r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+            _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
             size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
-            loss = lamb*cont_loss + size_loss
+            fit_loss = torch.abs(torch.sum(torch.norm(basis, dim=1))-torch.sum(torch.sqrt(eigenvalues[:n])))
+            loss = lamb*cont_loss + size_loss + lamb_fit*fit_loss
             loss.backward()
             optimizer.step()
         
@@ -209,6 +212,7 @@ for epoch in tqdm(range(num_epochs), desc="Training Progress"):
             cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
             cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
             size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+            _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
             loss = lamb*cont_loss + size_loss
             print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
