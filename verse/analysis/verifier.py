@@ -202,7 +202,10 @@ class Verifier:
             #To use Alex's version, change to "calc_reach_tube", and uncomment bloating method, kvalue, sim_trace_num
             #To use Katherine's version, change to "calc_reach_tube_linear", and comment bloating method, kvalue, sim_trace_num
             # reach_tube = combined_star.calc_reach_tube_linear(
-            reach_tube = combined_star.calc_reach_tube(
+            '''
+            Pass in agent_id as a parameter to specify which model to use, should also consider which agent
+            '''
+            reach_tube = combined_star.calc_reach_tube( 
             mode_label,
             time_horizon,
             time_step,
@@ -214,6 +217,7 @@ class Verifier:
             nn_enable=nn_enable,
             model_path=model_path,
             model_hparams=model_hparams,
+            agent_id=agent_id
             )
 
            

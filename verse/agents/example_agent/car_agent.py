@@ -100,8 +100,8 @@ class CarAgent(BaseAgent):
         vehicle_mode, vehicle_lane = mode
         vehicle_pos = np.array([x, y])
         a = 0
-        lane_width = lane_map.get_lane_width(vehicle_lane)
-        d = -lane_map.get_lateral_distance(vehicle_lane, vehicle_pos)
+        lane_width = lane_map.get_lane_width(vehicle_lane) 
+        d = -lane_map.get_lateral_distance(vehicle_lane, vehicle_pos) # NoneType error here for some reason
         if vehicle_mode == "Normal" or vehicle_mode == "Stop":
             pass
         elif vehicle_mode == "SwitchLeft":

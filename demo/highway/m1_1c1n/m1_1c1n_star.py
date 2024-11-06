@@ -37,7 +37,7 @@ if __name__ == "__main__":
     input_code_name = os.path.join(script_dir, "example_controller4.py")
     car = CarAgent('car1', file_name=input_code_name)
     car2 = NPCAgent('car2')
-    scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False))
+    scenario = Scenario(ScenarioConfig(parallel=False))
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
 
     scenario.config.model_path = 'highway'
@@ -89,4 +89,5 @@ if __name__ == "__main__":
     # traces.dump(os.path.join(script_dir, "output6_neureach.json")
     time_step = 0.05
     trace = scenario.verify(40,0.05)
-    plot_stars_time(trace)
+    # plot_stars_time(trace)
+    plot_reachtube_stars(trace,tmp_map, filter=10)

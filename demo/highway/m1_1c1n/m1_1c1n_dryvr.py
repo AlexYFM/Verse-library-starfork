@@ -79,8 +79,8 @@ if __name__ == "__main__":
     traces = bench.run(40, time_step)
     if bench.config.dump:
         traces.dump(os.path.join(script_dir, "output6_dryvr.json"))
-    if bench.config.plot or 1:
+    if bench.config.plot:
         fig = go.Figure()
-        fig = reachtube_tree(traces, tmp_map, fig, 1, 2, [1, 2], "lines", "trace")
+        fig = reachtube_tree(traces, tmp_map, fig, 0, 1, [0, 1], "lines", "trace")
         fig.show()
     bench.report()

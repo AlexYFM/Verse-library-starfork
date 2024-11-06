@@ -166,7 +166,8 @@ class StarSet:
     '''
     TO-DO: see if I can toggle which alg to use (DryVR, mine) based on some parameter, see if a new scenarioconfig can be added without much fuss
     '''
-    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,nn_enable,model_path,model_hparams):
+    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,nn_enable,model_path,model_hparams
+                        , agent_id: str):
         #get rectangle
 
         if not nn_enable:
@@ -209,15 +210,14 @@ class StarSet:
             if model_hparams is None:
                 raise Exception('No hyperparameters given to NN. Expected a dict with at least big_initial_set as a tuple form of a hyperparameter')
             model: PostNN
-            if model_path is None:
-                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, model_path='default', model_hparams=model_hparams)
-            elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}.pth"):
-                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, model_path=model_path, model_hparams=model_hparams)
-                print(f'Model trained and saved at {model_path}')
+            if model_path is None: # just get rid of this and make an actual default model path
+                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path='default', model_hparams=model_hparams)
+            elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth"): ### needs new model per agent and per mode
+                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path=model_path, model_hparams=model_hparams)
+                print(f'Model trained and saved at {model_path}/{agent_id}_{mode_label}')
             else:
-                ### needs updating 
                 model = create_model(self.n+self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
-                model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}.pth")) # see if I can somehow get this to work at any level
+                model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")) # see if I can somehow get this to work at any level
             reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True)
             # print(f"Time horizon: {time_horizon}")
             star_tube = []
@@ -1061,18 +1061,19 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
         #         loss = lamb*cont_loss + size_loss
         #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
-def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
+def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, agent_id: str = None, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
     input_size = initial.n+initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
     output_size = initial.basis.flatten().size
     model = create_model(input_size, hidden_size, output_size)
     model_he_init(model)
     train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lane_map, lamb, **model_hparams)
     model.eval()
-    os.makedirs("./verse/stars/models", exist_ok=True) # this directory too should be a scenario config thing
-    torch.save(model.state_dict(), f"./verse/stars/models/{model_path}.pth")
+    os.makedirs(f"./verse/stars/models/{model_path}", exist_ok=True) # this directory too should be a scenario config thing
+    torch.save(model.state_dict(), f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")
     return model
 
-def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=250, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False) -> List[StarSet]:
+# there is no reason for num_samples to be this high, it's literally just being used to compute the center of the star set and accuracy
+def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=100, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False) -> List[StarSet]:
     S = sample_star(initial, num_samples)
     post_points = []
     for point in S:

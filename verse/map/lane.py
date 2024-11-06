@@ -24,10 +24,11 @@ class Lane:
     def get_lane_segment(self, position: np.ndarray) -> AbstractLane:
         min_lateral = float("inf")
         idx = -1
-        seg = None
+        # seg = None 
+        seg = self.segment_list[0] # this is a lack by the way, see the comment below
         for seg_idx, segment in enumerate(self.segment_list):
             logitudinal, lateral = segment.local_coordinates(position)
-            is_on = 0 - Lane.COMPENSATE <= logitudinal < segment.length
+            is_on = 0 - Lane.COMPENSATE <= logitudinal < segment.length # for some reason, some stars falling out of this
             if is_on:
                 if lateral < min_lateral:
                     idx = seg_idx
