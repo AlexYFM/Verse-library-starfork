@@ -40,10 +40,10 @@ if __name__ == "__main__":
     scenario = Scenario(ScenarioConfig(parallel=False))
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
 
-    scenario.config.model_path = 'highway'
+    scenario.config.model_path = 'highway_diff_center'
 
     scenario.config.model_hparams = {
-        "big_initial_set": (np.array([0,-0.5,0,0]), np.array([15,0.5,0,0])),
+        "big_initial_set": (np.array([0,-0.5,0,0]), np.array([15,0.5,0,0])), # for now, make this the initial set instead to make training better 
         "initial_set_size": 1,
     }
 

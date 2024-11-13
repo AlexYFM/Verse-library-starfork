@@ -169,6 +169,8 @@ class StarSet:
     def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,nn_enable,model_path,model_hparams
                         , agent_id: str):
         #get rectangle
+        # self.print()
+        # print(f'Current agent: {agent_id}, mode: {mode_label}')
 
         if not nn_enable:
             initial_set = self.overapprox_rectangle()
@@ -566,6 +568,11 @@ class StarSet:
     ### for now, this only makes sense for zonotopes 
     ### I think I can use convex combination of stars and some nonlinear optimizer to solve for c+Va=\Sum\lambda_i(c_i+V_ia) in the future
     def combine_stars(stars: List["StarSet"]) -> "StarSet":
+        # if len(stars)>1:
+        #     stars[0].print()
+        #     stars[-1].print()
+        print(f'{len(stars)} star sets to be combined')
+
         m = len(stars)
         if m==0:
             raise Exception("Empty list of initial states")
@@ -961,6 +968,7 @@ def sample_initial_center(initial: StarSet, mini: np.ndarray, maxa: np.ndarray, 
         raise Exception('Vertices of hyperrectangle have different dimensions.')
 
     # print(initial)
+
     C, g = initial.C, initial.g
     X0 = []
     for _ in range(Ns):
@@ -1004,11 +1012,21 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
 
     pos = positional_encoding(times, d_model)
 
+    '''
+    Using this instead of big_initial_set due to issues with systems with different modes
+    '''
+    mini, maxa = initial.overapprox_rectangle()
+    mini = np.array(mini)
+    maxa = np.array(maxa)
+    ''''''
+
     for epoch in tqdm(range(num_epochs), desc="Training Progress"):
         # Zero the parameter gradients
         if big_initial_set is None or len(big_initial_set)!=2:
             raise Exception("Big initial set is either None or has size not 2")
-        X0 = sample_initial_center(initial, big_initial_set[0], big_initial_set[1], initial_set_size, Ns)
+        
+        X0 = sample_initial_center(initial, mini, maxa, initial_set_size, Ns) # see comment just before loop
+        # X0 = sample_initial_center(initial, big_initial_set[0], big_initial_set[1], initial_set_size, Ns)
 
         for i in range(Ns):
             Xi: StarSet = X0[i]
@@ -1047,19 +1065,6 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 optimizer.step()
             
         scheduler.step()
-        # if (epoch + 1) % 10 == 0:
-        #     print(f'Epoch [{epoch + 1}/{num_epochs}] \n_____________\n')
-        #     # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
-        #     for i in range(len(samples_times)):
-        #         flat_bases = model(torch.cat((pos[i], torch.tensor(initial.basis, dtype=torch.float).flatten()), dim=-1))
-        #         n = int(len(flat_bases) ** 0.5) 
-        #         basis = flat_bases.view(-1, n, n)
-        #         r_basis = basis + 1e-6*torch.eye(n) 
-        #         cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-        #         cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
-        #         size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
-        #         loss = lamb*cont_loss + size_loss
-        #         print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {i*ts:.1f}')
 
 def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, agent_id: str = None, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
     input_size = initial.n+initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
