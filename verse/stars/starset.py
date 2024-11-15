@@ -218,7 +218,7 @@ class StarSet:
                 model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path=model_path, model_hparams=model_hparams)
                 print(f'Model trained and saved at {model_path}/{agent_id}_{mode_label}')
             else:
-                model = create_model(self.n+self.basis.flatten().size+self.dimension()*2, 64, self.basis.flatten().size)
+                model = create_model(self.n+self.basis.flatten().size+1, 64, self.basis.flatten().size)
                 model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")) # see if I can somehow get this to work at any level
             reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True)
             # print(f"Time horizon: {time_horizon}")
@@ -226,8 +226,6 @@ class StarSet:
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
 
-            # print(f'\n{self.print()}, {time_horizon}\n')
-            # print('length of reachtube: ', len(star_tube))
             return star_tube
 
 
@@ -569,9 +567,13 @@ class StarSet:
     ### I think I can use convex combination of stars and some nonlinear optimizer to solve for c+Va=\Sum\lambda_i(c_i+V_ia) in the future
     def combine_stars(stars: List["StarSet"]) -> "StarSet":
         # if len(stars)>1:
+        #     print('____________________')
+        #     print('____________________')
         #     stars[0].print()
         #     stars[-1].print()
-        print(f'{len(stars)} star sets to be combined')
+        # print(f'{len(stars)} star sets to be combined')
+        # print('____________________')
+        # print('____________________')
 
         m = len(stars)
         if m==0:
@@ -943,7 +945,7 @@ def gen_starsets_post_sim_vis_nonit_nd(old_star: StarSet, sim: Callable, T: floa
         dim1 = 0
     if dim2>old_star.dimension():
         dim2 = 1
-    plot_stars_points_nonit_nd(stars, post_points, dim1, dim2) # this only makes sense if points is 2D, i.e., only simulated one ts
+    # plot_stars_points_nonit_nd(stars, post_points, dim1, dim2) # this only makes sense if points is 2D, i.e., only simulated one ts
     plt.show()
 
 def sim_star_vis(init_star: StarSet, sim: Callable, T: int = 7, ts: float = 0.05, N: int = 100) -> None:
@@ -1010,7 +1012,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
     # Training loop
     d_model = 2*initial.dimension() # should probably also let the user control this
 
-    pos = positional_encoding(times, d_model)
+    # pos = positional_encoding(times, d_model)
 
     '''
     Using this instead of big_initial_set due to issues with systems with different modes
@@ -1025,7 +1027,8 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
         if big_initial_set is None or len(big_initial_set)!=2:
             raise Exception("Big initial set is either None or has size not 2")
         
-        X0 = sample_initial_center(initial, mini, maxa, initial_set_size, Ns) # see comment just before loop
+        X0 = [initial for _ in range(Ns)] # see comment just before loop        
+        # X0 = sample_initial_center(initial, mini, maxa, initial_set_size, Ns) # see comment just before loop
         # X0 = sample_initial_center(initial, big_initial_set[0], big_initial_set[1], initial_set_size, Ns)
 
         for i in range(Ns):
@@ -1051,7 +1054,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
             post_points = torch.tensor(post_points).float()
             for i in range(len(samples_times)):
                 optimizer.zero_grad()
-                flat_bases = model(torch.cat((Xi_xo, Xi_v.flatten(), pos[i]), dim=-1))
+                flat_bases = model(torch.cat((Xi_xo, Xi_v.flatten(), samples_times[i].unsqueeze(0)), dim=-1))
                 n = int(len(flat_bases) ** 0.5) 
                 basis = flat_bases.view(-1, n, n)
                 
@@ -1064,10 +1067,26 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 loss.backward()
                 optimizer.step()
             
+        if (epoch+1)%10==0: 
+            print(f'\nEpoch [{epoch + 1}/{num_epochs}] \n_____________\n')
+            # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
+            for i in range(0, len(samples_times), len(samples_times)//20):
+                x0 = torch.tensor(initial.center, dtype=torch.float)
+                flat_bases = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), samples_times[i].unsqueeze(0)), dim=-1))
+                n = int(len(flat_bases) ** 0.5) 
+                basis = flat_bases.view(-1, n, n)
+                r_basis = basis + 1e-6*torch.eye(n) 
+                cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
+                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
+                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+                # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
+                loss = lamb*cont_loss + size_loss
+                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}')
+            
         scheduler.step()
 
 def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, agent_id: str = None, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
-    input_size = initial.n+initial.basis.flatten().size + initial.dimension()*2 #first term is basis, second is time/encoding of time 
+    input_size = initial.n+initial.basis.flatten().size + 1 # x0, V, t
     output_size = initial.basis.flatten().size
     model = create_model(input_size, hidden_size, output_size)
     model_he_init(model)
@@ -1084,9 +1103,9 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     for point in S:
             post_points.append(sim(mode_label, point, T, ts, lane_map).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
-
+    
     test_times = torch.arange(0, T, ts)
-    pos = positional_encoding(test_times, initial.dimension()*2)
+    # pos = positional_encoding(test_times, initial.dimension()*2)
     # test = torch.reshape(test_times, (len(test_times), 1))
     C, g = initial.C, initial.g
     x0 = torch.tensor(initial.center, dtype=torch.float)
@@ -1097,20 +1116,21 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-        flat_bases: torch.Tensor = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), pos[i]), dim=-1))
+        flat_bases: torch.Tensor = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), test_times[i].unsqueeze(0)), dim=-1))
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)[0]
         stars.append(StarSet(center, basis.detach().numpy(), C, g))    
 
         if verbose:
             accuracy.append(compute_accuracy(initial, points, basis))    
-        # plt.scatter(points[:, 0], points[:,1]) # just for plotting
+        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,0]) # just for plotting
 
     accuracy = np.array(accuracy)
 
     if verbose:
         print(f'Average accuracy: {np.mean(accuracy)}, Worst Accuracy: {np.min(accuracy)}') # this will get printed out for each node -- to not have this behavior, just store it in some global
     
+    # plot_stars_points_nonit_nd(stars, post_points, 0, 2)
     return stars
 
 def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: torch.Tensor):
@@ -1119,4 +1139,4 @@ def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: torch.Tens
     r_basis = 1e-6+np.eye(n)+new_basis.detach().numpy()
     cont = lambda p: np.linalg.norm(np.maximum(initial.C@np.linalg.inv(r_basis)@(p-new_center)-initial.g, 0))
     contain = np.sum(np.stack([cont(point) == 0 for point in points]))
-    return contain/len(points)
+    return np.round(contain/len(points), 3)

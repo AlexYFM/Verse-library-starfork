@@ -31,5 +31,6 @@ if __name__ == "__main__":
     )
     traces = scenario.verify(200, 1)
     fig = go.Figure()
-    fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
+    # fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
+    fig = reachtube_tree(traces, None, fig, 0, 3, [0, 3], "lines", "trace")
     fig.show()

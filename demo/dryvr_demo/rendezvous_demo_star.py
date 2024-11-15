@@ -24,15 +24,22 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # modify mode list input
-    scenario.config.model_path = 'spacecraft'
+    scenario.config.model_path = 'spacecraft_small_init_1'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
         "initial_set_size": 1,
     }
 
-    center = (np.array([-925, -425, 0, 0, 0, 0])+np.array([-875, -375, 0, 0, 0, 0]))/2
-    basis = np.eye(6)*np.diag(center-np.array([-925, -425, 0, 0, 0, 0]))
+    infin = np.array([-925, -425, 0, 0, 0, 0])
+    sup = np.array([-875, -375, 0, 0, 0, 0])
+
+    # off = np.array([20, 20, 0, 0, 0, 0])
+    # infin = np.array([-925, -425, 0, 0, 0, 0])+off
+    # sup = np.array([-875, -375, 0, 0, 0, 0])-off
+
+    center = (infin+sup)/2
+    basis = np.eye(6)*np.diag(center-infin)
     C, g = new_pred(6)
 
     car.set_initial(
@@ -50,8 +57,9 @@ if __name__ == "__main__":
     #     ],
     # )
 
-    traces = scenario.verify(200, 1)
-    plot_reachtube_stars(traces, filter=2)
+    traces = scenario.verify(108, 1)
+    # plot_reachtube_stars(traces, filter=2)
+    plot_stars_time(traces, 0)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
-    # fig.show()
+    plt.show()

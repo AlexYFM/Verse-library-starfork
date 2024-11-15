@@ -117,7 +117,9 @@ def plot_stars_time(root: AnalysisTree, dim: int=0, color: str = 'b', title: str
             for star in s_mode:
                 v_mode.append([star[0], *star[1].get_max_min(dim)]) # each vertex is actually the time index and the min/max of that dimension at that time
             v_mode = np.array(v_mode)
+            print(v_mode[-1][0], v_mode[0][0])
             verts.append(v_mode)
+            
 
         for i in range(len(verts)):
             v_mode = verts[i]
