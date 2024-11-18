@@ -999,20 +999,17 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
 TODO: 
 '''
 def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
-          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, lr: float=0.0005, Ns: int=10, Nt: int=100, 
+          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, lr: float=0.0005, Ns: int=1, Nt: int=100, 
           big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
     # Use SGD as the optimizer
+    print(f'Training with the following hyperparameters: \n Epochs {num_epochs}, Lambda {lamb}, Learning Rate {lr}, \n Number of Samples Per Initial Set {num_samples}, \n Number of Initial Sets {Ns}')
+
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-
-    times = torch.arange(0, T+ts, ts) # times to supply, right now this is fixed while S_t is random. can consider making this random as well
 
     C = torch.tensor(initial.C, dtype=torch.float)
     g = torch.tensor(initial.g, dtype=torch.float)
     # Training loop
-    d_model = 2*initial.dimension() # should probably also let the user control this
-
-    # pos = positional_encoding(times, d_model)
 
     '''
     Using this instead of big_initial_set due to issues with systems with different modes
@@ -1025,6 +1022,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
     for epoch in tqdm(range(num_epochs), desc="Training Progress"):
         # Zero the parameter gradients
         if big_initial_set is None or len(big_initial_set)!=2:
+            print(len(big_initial_set))
             raise Exception("Big initial set is either None or has size not 2")
         
         X0 = [initial for _ in range(Ns)] # see comment just before loop        
@@ -1035,10 +1033,11 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
             Xi: StarSet = X0[i]
             Xi_v = torch.tensor(Xi.basis, dtype=torch.float)
             Xi_xo = torch.tensor(Xi.center, dtype=torch.float)
-            samples = sample_star(Xi, 25) # Neureach has Nx_0 = 10
+            samples = sample_star(Xi, num_samples) # Neureach has Nx_0 = 10 -- this should be specified by a hyperparameter instead
 
             centers = [] 
-            samples_times = sample_times(T, ts, Nt)
+            # samples_times = sample_times(T, ts, Nt)
+            samples_times = torch.arange(0, T, ts) # this works better but result still not great
             # print(f'Sample times range: {torch.min(samples_times)}, {torch.max(samples_times)}') # fix samples times so that they are actually multiples of ts
 
             post_points = []
@@ -1061,7 +1060,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 # Compute the loss
                 r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
+                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples
                 size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
                 loss = lamb*cont_loss + size_loss
                 loss.backward()
@@ -1077,11 +1076,13 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 basis = flat_bases.view(-1, n, n)
                 r_basis = basis + 1e-6*torch.eye(n) 
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples 
+                points = post_points[:, int(samples_times[i]//ts), 1:]
+                accuracy = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))/num_samples
+                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples
                 size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
                 # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
                 loss = lamb*cont_loss + size_loss
-                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}')
+                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy}')
             
         scheduler.step()
 
@@ -1122,8 +1123,10 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
         stars.append(StarSet(center, basis.detach().numpy(), C, g))    
 
         if verbose:
-            accuracy.append(compute_accuracy(initial, points, basis))    
-        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,0]) # just for plotting
+            accuracy.append(compute_accuracy(initial, points, basis))
+            # if (i+1)%(10) == 0:
+            #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
+        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,2]) # just for plotting
 
     accuracy = np.array(accuracy)
 
