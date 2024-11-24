@@ -213,9 +213,9 @@ class StarSet:
                 raise Exception('No hyperparameters given to NN. Expected a dict with at least big_initial_set as a tuple form of a hyperparameter')
             model: PostNN
             if model_path is None: # just get rid of this and make an actual default model path
-                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path='default', model_hparams=model_hparams)
+                model = get_model(self, sim_func, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path='default', model_hparams=model_hparams)
             elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth"): ### needs new model per agent and per mode
-                model = get_model(self, sim_func, mode_label, num_epochs=30, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path=model_path, model_hparams=model_hparams)
+                model = get_model(self, sim_func, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path=model_path, model_hparams=model_hparams)
                 print(f'Model trained and saved at {model_path}/{agent_id}_{mode_label}')
             else:
                 model = create_model(self.n+self.basis.flatten().size+1, 64, self.basis.flatten().size)
@@ -566,14 +566,14 @@ class StarSet:
     ### for now, this only makes sense for zonotopes 
     ### I think I can use convex combination of stars and some nonlinear optimizer to solve for c+Va=\Sum\lambda_i(c_i+V_ia) in the future
     def combine_stars(stars: List["StarSet"]) -> "StarSet":
-        # if len(stars)>1:
-        #     print('____________________')
-        #     print('____________________')
-        #     stars[0].print()
-        #     stars[-1].print()
-        # print(f'{len(stars)} star sets to be combined')
-        # print('____________________')
-        # print('____________________')
+        if len(stars)>1:
+            print('____________________')
+            print('____________________')
+            stars[0].print()
+            stars[-1].print()
+        print(f'{len(stars)} star sets to be combined')
+        print('____________________')
+        print('____________________')
 
         m = len(stars)
         if m==0:
@@ -999,7 +999,7 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
 TODO: 
 '''
 def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
-          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, lr: float=0.0005, Ns: int=1, Nt: int=100, 
+          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, lr: float=0.0001, Ns: int=1, Nt: int=100, 
           big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
     # Use SGD as the optimizer
     print(f'Training with the following hyperparameters: \n Epochs {num_epochs}, Lambda {lamb}, Learning Rate {lr}, \n Number of Samples Per Initial Set {num_samples}, \n Number of Initial Sets {Ns}')
@@ -1061,6 +1061,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
                 cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples
+                # cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
                 size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
                 loss = lamb*cont_loss + size_loss
                 loss.backward()
@@ -1082,16 +1083,17 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
                 # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
                 loss = lamb*cont_loss + size_loss
-                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy}')
+                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
             
         scheduler.step()
 
-def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, agent_id: str = None, lamb: float = 7, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
+'''Consider if hidden size should also be controllable by hyperparams'''
+def get_model(initial: StarSet, sim: Callable, mode_label: int = None, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, agent_id: str = None, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
     input_size = initial.n+initial.basis.flatten().size + 1 # x0, V, t
     output_size = initial.basis.flatten().size
     model = create_model(input_size, hidden_size, output_size)
     model_he_init(model)
-    train(initial, sim, model, mode_label, num_epochs, num_samples, T, ts, lane_map, lamb, **model_hparams)
+    train(initial, sim, model, mode_label, T=T, ts=ts, lane_map=lane_map, **model_hparams) # initial, sim, model, mode_label, T, ts, and lane_map are fixed, rest should be handled by either defaults or hyperparams
     model.eval()
     os.makedirs(f"./verse/stars/models/{model_path}", exist_ok=True) # this directory too should be a scenario config thing
     torch.save(model.state_dict(), f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")
@@ -1099,6 +1101,9 @@ def get_model(initial: StarSet, sim: Callable, mode_label: int = None, num_epoch
 
 # there is no reason for num_samples to be this high, it's literally just being used to compute the center of the star set and accuracy
 def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=100, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False) -> List[StarSet]:
+    print(f'In mode {mode_label}')
+    initial.print()
+    
     S = sample_star(initial, num_samples)
     post_points = []
     for point in S:
@@ -1126,12 +1131,12 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(initial, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,2]) # just for plotting
+        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,0]) # just for plotting
 
     accuracy = np.array(accuracy)
 
     if verbose:
-        print(f'Average accuracy: {np.mean(accuracy)}, Worst Accuracy: {np.min(accuracy)}') # this will get printed out for each node -- to not have this behavior, just store it in some global
+        print(f'Average accuracy: {np.mean(accuracy):.2f}., Worst Accuracy: {np.min(accuracy):.2f}') # this will get printed out for each node -- to not have this behavior, just store it in some global
     
     # plot_stars_points_nonit_nd(stars, post_points, 0, 2)
     return stars
