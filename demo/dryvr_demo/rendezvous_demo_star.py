@@ -24,12 +24,14 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # modify mode list input
-    scenario.config.model_path = 'spacecraft_small_init_new_hparams_'
+    scenario.config.model_path = 'spacecraft_small_init_new_hparams'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
         "initial_set_size": 1,
         "lamb": 5,
+        "num_epochs": 70,
+        "gamma":1,
         # "num_samples": 100,
         # "Ns": 1
     }
@@ -60,9 +62,9 @@ if __name__ == "__main__":
     #     ],
     # )
 
-    traces = scenario.verify(104, 1)
+    traces = scenario.verify(100, 1)
     # plot_reachtube_stars(traces, filter=2)
-    plot_stars_time(traces, 0)
+    plot_stars_time(traces, 2)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
     plt.show()

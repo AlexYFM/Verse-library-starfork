@@ -217,6 +217,7 @@ class StarSet:
             elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth"): ### needs new model per agent and per mode
                 model = get_model(self, sim_func, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path=model_path, model_hparams=model_hparams)
                 print(f'Model trained and saved at {model_path}/{agent_id}_{mode_label}')
+                write_train_details(model_path, **model_hparams)
             else:
                 model = create_model(self.n+self.basis.flatten().size+1, 64, self.basis.flatten().size)
                 model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")) # see if I can somehow get this to work at any level
@@ -566,14 +567,14 @@ class StarSet:
     ### for now, this only makes sense for zonotopes 
     ### I think I can use convex combination of stars and some nonlinear optimizer to solve for c+Va=\Sum\lambda_i(c_i+V_ia) in the future
     def combine_stars(stars: List["StarSet"]) -> "StarSet":
-        if len(stars)>1:
-            print('____________________')
-            print('____________________')
-            stars[0].print()
-            stars[-1].print()
-        print(f'{len(stars)} star sets to be combined')
-        print('____________________')
-        print('____________________')
+        # if len(stars)>1:
+        #     print('____________________')
+        #     print('____________________')
+        #     stars[0].print()
+        #     stars[-1].print()
+        # print(f'{len(stars)} star sets to be combined')
+        # print('____________________')
+        # print('____________________')
 
         m = len(stars)
         if m==0:
@@ -608,7 +609,7 @@ class StarSet:
         return StarSet(center, basis, C, g)
 
     def print(self) -> None:
-        print(f'{self.center}\n------\n{self.basis}\n------\n{self.C}\n------\n{self.g}')
+        print(f'Center: {self.center}\n------\nBasis: {self.basis}\n------\C: {self.C}\n------\ng: {self.g}')
 
 class HalfSpace:
     '''
@@ -999,13 +1000,13 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
 TODO: 
 '''
 def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
-          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, lr: float=0.0001, Ns: int=1, Nt: int=100, 
-          big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
+          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, gamma: float=0.99, lr: float=0.0001, Ns: int=1, Nt: int=100, 
+          big_initial_set: Tuple = None, initial_set_size: float = 0.25, verbose: bool=True) -> None:
     # Use SGD as the optimizer
     print(f'Training with the following hyperparameters: \n Epochs {num_epochs}, Lambda {lamb}, Learning Rate {lr}, \n Number of Samples Per Initial Set {num_samples}, \n Number of Initial Sets {Ns}')
 
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
 
     C = torch.tensor(initial.C, dtype=torch.float)
     g = torch.tensor(initial.g, dtype=torch.float)
@@ -1101,8 +1102,9 @@ def get_model(initial: StarSet, sim: Callable, mode_label: int = None, T: float 
 
 # there is no reason for num_samples to be this high, it's literally just being used to compute the center of the star set and accuracy
 def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=100, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False) -> List[StarSet]:
-    print(f'In mode {mode_label}')
-    initial.print()
+    # if verbose:
+    #     print(f'In mode {mode_label}')
+    #     initial.print()
     
     S = sample_star(initial, num_samples)
     post_points = []
@@ -1131,7 +1133,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(initial, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,0]) # just for plotting
+        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,2]) # just for plotting
 
     accuracy = np.array(accuracy)
 
@@ -1148,3 +1150,12 @@ def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: torch.Tens
     cont = lambda p: np.linalg.norm(np.maximum(initial.C@np.linalg.inv(r_basis)@(p-new_center)-initial.g, 0))
     contain = np.sum(np.stack([cont(point) == 0 for point in points]))
     return np.round(contain/len(points), 3)
+
+def write_train_details(model_path: str, num_epochs: int = 30, num_samples: int = 100, 
+          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, gamma: float=0.99, 
+          lr: float=0.0001, Ns: int=1, Nt: int=100, 
+          big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
+    
+    with open(f'./verse/stars/models/{model_path}/model_details.txt', 'w') as file:
+        for param, val in locals().items():
+            file.write(f'Parameter name: {param}: {val}\n')
