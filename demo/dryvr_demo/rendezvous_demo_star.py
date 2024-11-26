@@ -24,14 +24,15 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # modify mode list input
-    scenario.config.model_path = 'spacecraft_small_init_new_hparams'
+    scenario.config.model_path = 'spacecraft_small_init_norm_size_loss_check'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
         "initial_set_size": 1,
-        "lamb": 5,
-        "num_epochs": 70,
-        "gamma":1,
+        "lamb": 7,
+        "num_epochs": 30,
+        "gamma":0.99,
+        "lr":1e-4,
         # "num_samples": 100,
         # "Ns": 1
     }

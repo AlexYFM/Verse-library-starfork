@@ -1059,12 +1059,20 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 basis = flat_bases.view(-1, n, n)
                 
                 # Compute the loss
+                points = post_points[:, int(samples_times[i]//ts), 1:]
                 r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples
+                cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
                 # cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
-                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
-                loss = lamb*cont_loss + size_loss
+                # size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+                
+                centered_points = points-points.mean(dim=0, keepdim=True)
+                _, _, rV = torch.svd_lowrank(centered_points, q=initial.n)
+                norm_size_loss = torch.norm(basis@basis.T-rV@rV.T, 'fro')/torch.norm(rV@rV.T, 'fro')
+                print(f'rV dim {(rV@rV.T).shape}, basis dim {(basis@basis.T).shape}')
+                exit()
+                # loss = lamb*cont_loss + size_loss
+                loss = lamb*cont_loss + norm_size_loss
                 loss.backward()
                 optimizer.step()
             
@@ -1075,16 +1083,23 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 x0 = torch.tensor(initial.center, dtype=torch.float)
                 flat_bases = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), samples_times[i].unsqueeze(0)), dim=-1))
                 n = int(len(flat_bases) ** 0.5) 
-                basis = flat_bases.view(-1, n, n)
+                basis: torch.Tensor = flat_bases.view(-1, n, n)
                 r_basis = basis + 1e-6*torch.eye(n) 
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
                 points = post_points[:, int(samples_times[i]//ts), 1:]
                 accuracy = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))/num_samples
-                cont_loss = torch.sum(torch.stack([cont(point, i) for point in post_points[:, int(samples_times[i]//ts), 1:]]))/num_samples
-                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+                cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
+                # size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+
+                centered_points = points-points.mean(dim=0, keepdim=True)
+                _, _, rV = torch.svd_lowrank(centered_points, q=initial.n)
+                norm_size_loss = torch.norm(basis@basis.T-rV@rV.T, 'fro')/torch.norm(rV@rV.T, 'fro')
+                
                 # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
-                loss = lamb*cont_loss + size_loss
-                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
+                # loss = lamb*cont_loss + size_loss
+                loss = lamb*cont_loss + norm_size_loss
+                # print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
+                print(f'containment loss: {cont_loss.item():.4f}, normed size loss: {norm_size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
             
         scheduler.step()
 
