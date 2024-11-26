@@ -1001,7 +1001,7 @@ TODO:
 '''
 def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
           T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, gamma: float=0.99, lr: float=0.0001, Ns: int=1, Nt: int=100, 
-          big_initial_set: Tuple = None, initial_set_size: float = 0.25, verbose: bool=True) -> None:
+          big_initial_set: Tuple = None, initial_set_size: float = 0.25, sublin_loss: bool=False) -> None:
     # Use SGD as the optimizer
     print(f'Training with the following hyperparameters: \n Epochs {num_epochs}, Lambda {lamb}, Learning Rate {lr}, \n Number of Samples Per Initial Set {num_samples}, \n Number of Initial Sets {Ns}')
 
@@ -1055,7 +1055,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
             for i in range(len(samples_times)):
                 optimizer.zero_grad()
                 flat_bases = model(torch.cat((Xi_xo, Xi_v.flatten(), samples_times[i].unsqueeze(0)), dim=-1))
-                n = int(len(flat_bases) ** 0.5) 
+                n = initial.n
                 basis = flat_bases.view(-1, n, n)
                 
                 # Compute the loss
@@ -1063,16 +1063,13 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
                 cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
-                # cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
-                # size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
                 
-                centered_points = points-points.mean(dim=0, keepdim=True)
-                _, _, rV = torch.svd_lowrank(centered_points, q=initial.n)
-                norm_size_loss = torch.norm(basis@basis.T-rV@rV.T, 'fro')/torch.norm(rV@rV.T, 'fro')
-                print(f'rV dim {(rV@rV.T).shape}, basis dim {(basis@basis.T).shape}')
-                exit()
-                # loss = lamb*cont_loss + size_loss
-                loss = lamb*cont_loss + norm_size_loss
+                if sublin_loss:
+                    cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
+
+                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+                
+                loss = lamb*cont_loss + size_loss
                 loss.backward()
                 optimizer.step()
             
@@ -1089,17 +1086,14 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 points = post_points[:, int(samples_times[i]//ts), 1:]
                 accuracy = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))/num_samples
                 cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
-                # size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
 
-                centered_points = points-points.mean(dim=0, keepdim=True)
-                _, _, rV = torch.svd_lowrank(centered_points, q=initial.n)
-                norm_size_loss = torch.norm(basis@basis.T-rV@rV.T, 'fro')/torch.norm(rV@rV.T, 'fro')
+                if sublin_loss:
+                    cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
                 
-                # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
-                # loss = lamb*cont_loss + size_loss
-                loss = lamb*cont_loss + norm_size_loss
-                # print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
-                print(f'containment loss: {cont_loss.item():.4f}, normed size loss: {norm_size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
+                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+
+                loss = lamb*cont_loss + size_loss
+                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
             
         scheduler.step()
 
@@ -1148,7 +1142,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(initial, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,2]) # just for plotting
+        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,0]) # just for plotting
 
     accuracy = np.array(accuracy)
 
@@ -1169,7 +1163,7 @@ def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: torch.Tens
 def write_train_details(model_path: str, num_epochs: int = 30, num_samples: int = 100, 
           T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, gamma: float=0.99, 
           lr: float=0.0001, Ns: int=1, Nt: int=100, 
-          big_initial_set: Tuple = None, initial_set_size: float = 0.25) -> None:
+          big_initial_set: Tuple = None, initial_set_size: float = 0.25, sublin_loss: bool=False) -> None:
     
     with open(f'./verse/stars/models/{model_path}/model_details.txt', 'w') as file:
         for param, val in locals().items():
