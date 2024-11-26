@@ -28,3 +28,4 @@ build/
 .python-version
 *.csv
 *.pth
+model_details.txt
