@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     traces = scenario.verify(100, 1)
     # plot_reachtube_stars(traces, filter=2)
-    plot_stars_time(traces, 0)
+    plot_stars_time(traces, 2)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
     plt.show()

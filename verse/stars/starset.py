@@ -1142,7 +1142,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(initial, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        plt.scatter(np.ones(len(points[:,2]))*i*ts, points[:,0]) # just for plotting
+        plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,1]) # just for plotting
 
     accuracy = np.array(accuracy)
 

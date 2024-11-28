@@ -1,5 +1,5 @@
 from sleeve_agent import sleeve_agent
-from verse import Scenario
+from verse import Scenario, ScenarioConfig
 from verse.plotter.plotter2D import *
 
 import plotly.graph_objects as go
@@ -13,7 +13,7 @@ class AgentMode(Enum):
 
 if __name__ == "__main__":
     input_code_name = "./demo/dryvr_demo/sleeve_controller.py"
-    scenario = Scenario()
+    scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False))
 
     car = sleeve_agent("sleeve", file_name=input_code_name)
     scenario.add_agent(car)

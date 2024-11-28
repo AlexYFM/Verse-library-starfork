@@ -61,7 +61,7 @@ class sleeve_agent(BaseAgent):
         t = [round(i * time_step, 10) for i in range(0, number_points)]
 
         init = initialCondition
-        trace = [[0] + init]
+        trace = [[0] + list(init)]
         for i in range(len(t)):
             if mode[0] == "Free":
                 r = ode(self.dynamic_free)

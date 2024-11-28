@@ -12,8 +12,8 @@ class AgentMode(Enum):
 
 
 if __name__ == "__main__":
-    input_code_name = "./demo/dryvr_demo/sleeve_controller2.py"
-    config = ScenarioConfig(init_seg_length=1)
+    input_code_name = "./demo/dryvr_demo/sleeve_controller.py"
+    config = ScenarioConfig(init_seg_length=1, parallel=False)
     scenario = Scenario(config=config)
 
     car = sleeve_agent("sleeve", file_name=input_code_name)
