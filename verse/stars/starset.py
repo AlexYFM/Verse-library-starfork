@@ -1069,6 +1069,10 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
 
                 size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
                 
+                # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
+                # fit_loss = torch.relu(torch.sum(torch.norm(basis, dim=1))-torch.sum(torch.sqrt(eigenvalues[:n])))
+                # loss = lamb*cont_loss + fit_loss
+                
                 loss = lamb*cont_loss + size_loss
                 loss.backward()
                 optimizer.step()
@@ -1091,10 +1095,14 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                     cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
                 
                 size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
+                # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
+                # fit_loss = torch.relu(torch.sum(torch.norm(basis, dim=1))-torch.sum(torch.sqrt(eigenvalues[:n])))
+                # loss = lamb*cont_loss + fit_loss
 
                 loss = lamb*cont_loss + size_loss
-                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
-            
+                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')            
+                # print(f'containment loss: {cont_loss.item():.4f}, fit size loss: {fit_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
+
         scheduler.step()
 
 '''Consider if hidden size should also be controllable by hyperparams'''
@@ -1142,7 +1150,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(initial, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,1]) # just for plotting
+        plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,0]) # just for plotting
 
     accuracy = np.array(accuracy)
 

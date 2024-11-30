@@ -79,13 +79,13 @@ if __name__ == "__main__":
 
     scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False))
     
-    scenario.config.model_path = 'synth_scenario_testing_asymp_70_epochs'
+    scenario.config.model_path = 'synth_scenario_testing_asymp_fit_loss'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
         "initial_set_size": 1,
         "lamb": 7,
-        "num_epochs": 70,
+        "num_epochs": 30,
         "gamma":0.99,
         "lr":1e-4,
         "sublin_loss":True,
@@ -122,5 +122,5 @@ if __name__ == "__main__":
     # fig.show()
 
     trace = scenario.verify(7, 0.1)
-    plot_stars_time(trace, 1)
+    plot_stars_time(trace, 0)
     plt.show()
