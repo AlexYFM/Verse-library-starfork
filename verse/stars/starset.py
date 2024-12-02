@@ -609,7 +609,7 @@ class StarSet:
         return StarSet(center, basis, C, g)
 
     def print(self) -> None:
-        print(f'Center: {self.center}\n------\nBasis: {self.basis}\n------\C: {self.C}\n------\ng: {self.g}')
+        print(f'Center: {self.center}\n------\nBasis: {self.basis}\n------\nC: {self.C}\n------\ng: {self.g}')
 
 class HalfSpace:
     '''
@@ -1121,7 +1121,7 @@ def get_model(initial: StarSet, sim: Callable, mode_label: int = None, T: float 
 def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=100, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False) -> List[StarSet]:
     # if verbose:
     #     print(f'In mode {mode_label}')
-    #     initial.print()
+        # initial.print()
     
     S = sample_star(initial, num_samples)
     post_points = []
@@ -1144,28 +1144,31 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
         flat_bases: torch.Tensor = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), test_times[i].unsqueeze(0)), dim=-1))
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)[0]
-        stars.append(StarSet(center, basis.detach().numpy(), C, g))    
+        new_star = StarSet(center, basis.detach().numpy(), C, g)
+        stars.append(new_star)    
 
         if verbose:
-            accuracy.append(compute_accuracy(initial, points, basis))
+            accuracy.append(compute_accuracy(new_star, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,0]) # just for plotting
+        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,2]) # just for plotting
+        plt.scatter(points[:,0], points[:,1]) # just for plotting
 
     accuracy = np.array(accuracy)
 
     if verbose:
         print(f'Average accuracy: {np.mean(accuracy):.2f}., Worst Accuracy: {np.min(accuracy):.2f}') # this will get printed out for each node -- to not have this behavior, just store it in some global
-    
     # plot_stars_points_nonit_nd(stars, post_points, 0, 2)
     return stars
 
 def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: torch.Tensor):
     n = initial.n
     new_center = np.mean(points, axis=0)
-    r_basis = 1e-6+np.eye(n)+new_basis.detach().numpy()
+    r_basis = 1e-6*np.eye(n)+new_basis.detach().numpy()
     cont = lambda p: np.linalg.norm(np.maximum(initial.C@np.linalg.inv(r_basis)@(p-new_center)-initial.g, 0))
     contain = np.sum(np.stack([cont(point) == 0 for point in points]))
+    # for point in points:
+    #     print(cont(point))
     return np.round(contain/len(points), 3)
 
 def write_train_details(model_path: str, num_epochs: int = 30, num_samples: int = 100, 

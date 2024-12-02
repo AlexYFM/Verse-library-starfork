@@ -20,8 +20,8 @@ import plotly.graph_objects as go
 from verse.utils.fixed_points import *
 
 from verse.stars.starset import *
-from verse.sensor.base_sensor_stars import *
 
+from verse.sensor.base_sensor_stars import *
 from verse.analysis.verifier import ReachabilityMethod
 
 class PowerTrainAgent(BaseAgent):
@@ -111,7 +111,19 @@ if __name__ == "__main__":
     PT = PowerTrainAgent('PT', file_name=input_code_name)
 
     scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False))
+    scenario.config.model_path = 'powertrain_sublin'
 
+    scenario.config.model_hparams = {
+        "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
+        "initial_set_size": 1,
+        "lamb": 7,
+        "num_epochs": 30,
+        "gamma":0.99,
+        "lr":1e-4,
+        "sublin_loss":True,
+        # "num_samples": 100,
+        # "Ns": 1
+    }
     basis = np.array([[0.001, 0, 0, 0,0], [0, 0.001, 0, 0,0], [0, 0, 0.001, 0,0], [0, 0, 0, 0.001,0], [0,0,0,0,0]])  
     center = np.array([0.6353,14.7, 0.5573, 0.017,0])
     C = np.transpose(np.array([[1,-1,0,0, 0, 0, 0, 0,0,0],[0,0,1,-1, 0, 0, 0,0,0,0], [0,0,0,0,1,-1, 0, 0,0,0],[0,0,0,0,0,0,1,-1,0,0],[0,0,0,0,0,0,0,0,1,-1]]))
@@ -136,18 +148,6 @@ if __name__ == "__main__":
     #     'PT', init_PT,(PTMode.Mode0,)
     # )
 
-    trace = scenario.verify(15, 0.1)
-
-    # pp_fix(reach_at_fix(trace, 0, 15))
-
-    # T, t_step = 15, 0.001
-    # # r_final = reach_at_fix(trace)
-    # # r_candid = reach_at_fix(trace, 0, T-t_step+t_step*.01)
-    # # print(f'Does the candidate reachset contain the final reachset: {contain_all_fix(r_final, r_candid)}')
-    # print(f'Fixed points exists? {fixed_points_fix(trace, 15, 0.001)}')
-
-    # fig = go.Figure()
-    # fig = reachtube_tree(trace, None, fig, 0, 2, [0, 2], "fill", "trace")
-    # # fig = reachtube_tree_slice(trace, None, fig, 0, 2, [0, 2], "fill", "trace", plot_color=colors[1:])
-    # # fig = simulation_tree(trace, None, fig, 1, 2, [1, 2], "fill", "trace")
-    # fig.show()
+    trace = scenario.verify(9.4, 0.1)
+    plot_stars_time(trace, 2)
+    plt.show()

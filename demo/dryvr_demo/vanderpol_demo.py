@@ -24,23 +24,33 @@ def plot_stars(stars: List[StarSet], dim1: int = None, dim2: int = None):
 if __name__ == "__main__":
     input_code_name = "./demo/dryvr_demo/vanderpol_controller.py"
     scenario = Scenario(ScenarioConfig(parallel=False))
+    scenario.config.model_path = 'vanderpol_sll'
+
+    scenario.config.model_hparams = {
+        "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
+        "initial_set_size": 1,
+        "lamb": 7,
+        "num_epochs": 30,
+        "gamma":0.99,
+        "lr":1e-4,
+        "sublin_loss":True,
+        # "num_samples": 100,
+        # "Ns": 1
+    }
 
     car = vanderpol_agent("car1", file_name=input_code_name)
     # car = vanderpol_agent('car2', file_name=input_code_name)
     # scenario.add_agent(car)
     # scenario.set_sensor(FakeSensor2())
     # modify mode list input
-    basis = np.array([[1, 0], [0, 1]]) * np.diag([0.01, 0.01])
+    basis = np.array([[1, 0], [0, 1]]) * np.diag([0.1, 0.1])
     center = np.array([1.40,2.30])
     C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
     g = np.array([1,1,1,1])
 
-    basis = basis * 100
-    initial = StarSet(center, basis, C, g)
-    initial_trans = StarSet(center-np.array([-1, 1]), basis@np.array([[-1, 1], [1, 0]]), np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]])), g)
-    plot_stars([initial, initial_trans])
+    # initial_trans = StarSet(center-np.array([-1, 1]), basis@np.array([[-1, 1], [1, 0]]), np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]])), g)
+    # plot_stars([initial, initial_trans])
     ### how do I instantiate a scenario with a starset instead of a hyperrectangle?
-    exit() 
     car.set_initial(
             # [[1.25, 2.25], [1.25, 2.25]],
             # [[1.55, 2.35], [1.55, 2.35]]
