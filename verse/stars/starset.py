@@ -609,7 +609,10 @@ class StarSet:
         return StarSet(center, basis, C, g)
 
     def print(self) -> None:
-        print(f'Center: {self.center}\n------\nBasis: {self.basis}\n------\nC: {self.C}\n------\ng: {self.g}')
+        print(f'Center: {self.center}\n__________\nBasis: {self.basis}\n__________\nC: {self.C}\n__________\ng: {self.g}')
+
+    def sample(self, num_samples: int=100)->List[List[float]]:
+        return sample_star(self, num_samples)
 
 class HalfSpace:
     '''
@@ -635,7 +638,7 @@ def containment_poly(star: StarSet, point: np.ndarray) -> bool:
     return np.linalg.norm(np.maximum(C@np.linalg.inv(basis)@(point-center)-g, 0))==0
 
 ### N is the number of points, tol is how many misses consecutively we can see before raising an error  
-def sample_star(star: StarSet, N: int, tol: float = 0.2) -> List[List[float]]:
+def sample_star(star: StarSet, N: int = 100, tol: float = 0.2) -> List[List[float]]:
      
     rect = star.overapprox_rectangle()
     points = []
@@ -1151,8 +1154,8 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(new_star, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,2]) # just for plotting
-        plt.scatter(points[:,0], points[:,1]) # just for plotting
+        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,1]) # just for plotting
+        # plt.scatter(points[:,0], points[:,1]) # just for plotting
 
     accuracy = np.array(accuracy)
 

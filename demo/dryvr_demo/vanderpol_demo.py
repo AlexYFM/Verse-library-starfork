@@ -71,7 +71,8 @@ if __name__ == "__main__":
     
     # for star in car1:
     #     print(star.center, star.basis, star.C, star.g, '\n --------')
-    plot_stars(car1, 0, 1)
+    # plot_stars(car1, 0, 1)
+    plot_stars_time(traces, 1, sim=vanderpol_agent.TC_simulate, scenario_agent=car)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 0, 1, [0, 1], "lines", "trace")
     # fig.show()
