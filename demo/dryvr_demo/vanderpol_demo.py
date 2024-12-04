@@ -24,7 +24,7 @@ def plot_stars(stars: List[StarSet], dim1: int = None, dim2: int = None):
 if __name__ == "__main__":
     input_code_name = "./demo/dryvr_demo/vanderpol_controller.py"
     scenario = Scenario(ScenarioConfig(parallel=False))
-    scenario.config.model_path = 'vanderpol_sll'
+    scenario.config.model_path = 'vanderpol_sll_normalized'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     
     # for star in car1:
     #     print(star.center, star.basis, star.C, star.g, '\n --------')
-    # plot_stars(car1, 0, 1)
-    plot_stars_time(traces, 1, sim=vanderpol_agent.TC_simulate, scenario_agent=car)
+    plot_stars(car1, 0, 1)
+    # plot_stars_time(traces, 0, sim=vanderpol_agent.TC_simulate, scenario_agent=car)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 0, 1, [0, 1], "lines", "trace")
     # fig.show()

@@ -221,7 +221,11 @@ class StarSet:
             else:
                 model = create_model(self.n+self.basis.flatten().size+1, 64, self.basis.flatten().size)
                 model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")) # see if I can somehow get this to work at any level
-            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True)
+            # reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True)
+            
+            ts_mean, mad = load_norms(model_path, mode_label, agent_id)
+            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True, ts_mean=ts_mean, mad=mad)
+            
             # print(f"Time horizon: {time_horizon}")
             star_tube = []
             for i in range(len(reach)):
@@ -1002,7 +1006,7 @@ def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
 '''
 TODO: 
 '''
-def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_epochs: int = 30, num_samples: int = 100, 
+def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, agent_id: str = None, model_path: str = None, num_epochs: int = 30, num_samples: int = 100, 
           T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, gamma: float=0.99, lr: float=0.0001, Ns: int=1, Nt: int=100, 
           big_initial_set: Tuple = None, initial_set_size: float = 0.25, sublin_loss: bool=False) -> None:
     # Use SGD as the optimizer
@@ -1055,6 +1059,17 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 centers.append(torch.tensor(new_center, dtype=torch.float))
 
             post_points = torch.tensor(post_points).float()
+
+            '''
+            For now, ignore the fact that this is being recomputed for each epoch and initial set
+            Ideally, this should either be computed once up front or slowly updated in each iteration
+            '''
+            ts_mean = post_points.mean(dim=(0,1), keepdim=True) # mean over all time, samples
+            centered_points = post_points-ts_mean
+            mad: torch.Tensor = torch.mean(torch.abs(centered_points), dim=(0,1), keepdim=True) # 1x1x(n+1) tensor
+            mad = mad.clamp(min=1e-6) # regularization, prevent divide by zero 
+            normed_points = centered_points/mad 
+
             for i in range(len(samples_times)):
                 optimizer.zero_grad()
                 flat_bases = model(torch.cat((Xi_xo, Xi_v.flatten(), samples_times[i].unsqueeze(0)), dim=-1))
@@ -1062,7 +1077,10 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 basis = flat_bases.view(-1, n, n)
                 
                 # Compute the loss
-                points = post_points[:, int(samples_times[i]//ts), 1:]
+                # points = post_points[:, int(samples_times[i]//ts), 1:]
+
+                points = normed_points[:, int(samples_times[i]//ts), 1:]
+                
                 r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
                 cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
@@ -1090,7 +1108,10 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 basis: torch.Tensor = flat_bases.view(-1, n, n)
                 r_basis = basis + 1e-6*torch.eye(n) 
                 cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-                points = post_points[:, int(samples_times[i]//ts), 1:]
+                # points = post_points[:, int(samples_times[i]//ts), 1:]
+
+                points = normed_points[:, int(samples_times[i]//ts), 1:]
+
                 accuracy = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))/num_samples
                 cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
 
@@ -1108,20 +1129,22 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
 
         scheduler.step()
 
+    save_norms(ts_mean, mad, model_path, mode_label, agent_id) # save the mean and mad for later 
+
 '''Consider if hidden size should also be controllable by hyperparams'''
 def get_model(initial: StarSet, sim: Callable, mode_label: int = None, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, agent_id: str = None, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
     input_size = initial.n+initial.basis.flatten().size + 1 # x0, V, t
     output_size = initial.basis.flatten().size
     model = create_model(input_size, hidden_size, output_size)
     model_he_init(model)
-    train(initial, sim, model, mode_label, T=T, ts=ts, lane_map=lane_map, **model_hparams) # initial, sim, model, mode_label, T, ts, and lane_map are fixed, rest should be handled by either defaults or hyperparams
-    model.eval()
     os.makedirs(f"./verse/stars/models/{model_path}", exist_ok=True) # this directory too should be a scenario config thing
+    train(initial, sim, model, mode_label, agent_id, model_path, T=T, ts=ts, lane_map=lane_map, **model_hparams) # initial, sim, model, mode_label, T, ts, and lane_map are fixed, rest should be handled by either defaults or hyperparams
+    model.eval()
     torch.save(model.state_dict(), f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")
     return model
 
 # there is no reason for num_samples to be this high, it's literally just being used to compute the center of the star set and accuracy
-def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=100, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False) -> List[StarSet]:
+def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=100, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False, ts_mean: torch.Tensor = None, mad: torch.Tensor = None) -> List[StarSet]:
     # if verbose:
     #     print(f'In mode {mode_label}')
         # initial.print()
@@ -1141,13 +1164,20 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     stars = []
     accuracy = []
 
+    mad = mad.squeeze()[1:].detach().numpy() # mad should now be nx1 np array that should hopefully broadcast with the basis appropriately
+    mad = np.diag(mad) # values on diagonals, now basis @ mad should scale each column and thus each dimension properly 
+
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         flat_bases: torch.Tensor = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), test_times[i].unsqueeze(0)), dim=-1))
         n = int(len(flat_bases) ** 0.5) 
-        basis = flat_bases.view(-1, n, n)[0]
-        new_star = StarSet(center, basis.detach().numpy(), C, g)
+        basis = flat_bases.view(-1, n, n)[0].detach().numpy()
+
+        basis = basis@mad # should scale all rows of basis
+
+
+        new_star = StarSet(center, basis, C, g)
         stars.append(new_star)    
 
         if verbose:
@@ -1164,10 +1194,10 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     # plot_stars_points_nonit_nd(stars, post_points, 0, 2)
     return stars
 
-def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: torch.Tensor):
+def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: np.ndarray):
     n = initial.n
     new_center = np.mean(points, axis=0)
-    r_basis = 1e-6*np.eye(n)+new_basis.detach().numpy()
+    r_basis = 1e-6*np.eye(n)+new_basis
     cont = lambda p: np.linalg.norm(np.maximum(initial.C@np.linalg.inv(r_basis)@(p-new_center)-initial.g, 0))
     contain = np.sum(np.stack([cont(point) == 0 for point in points]))
     # for point in points:
@@ -1182,3 +1212,13 @@ def write_train_details(model_path: str, num_epochs: int = 30, num_samples: int 
     with open(f'./verse/stars/models/{model_path}/model_details.txt', 'w') as file:
         for param, val in locals().items():
             file.write(f'Parameter name: {param}: {val}\n')
+
+# Save the mean and MAD to right file locations -- assuming 
+def save_norms(mean: torch.Tensor, mad: torch.Tensor, model_path: str, mode_label: str, agent_id: str) -> None:
+    factors = {"mean": mean, "mad": mad}
+    torch.save(factors, f'./verse/stars/models/{model_path}/{agent_id}_{mode_label}_norm_factors.pt')
+
+# Load the normalization factors from right file locations
+def load_norms(model_path: str, mode_label: str, agent_id: str) -> Tuple[torch.Tensor]: # not sure if return type is correct
+    factors = torch.load(f'./verse/stars/models/{model_path}/{agent_id}_{mode_label}_norm_factors.pt')
+    return factors["mean"], factors["mad"]
