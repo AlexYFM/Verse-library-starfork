@@ -1053,10 +1053,10 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
                 post_points.append(sim(mode_label, point, torch.max(samples_times), ts, lane_map).tolist())
             post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
 
-            for i in range(len(samples_times)):
-                points = post_points[:, int(samples_times[i]//ts), 1:]
-                new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-                centers.append(torch.tensor(new_center, dtype=torch.float))
+            # for i in range(len(samples_times)):
+            #     points = post_points[:, int(samples_times[i]//ts), 1:]
+            #     new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
+            #     centers.append(torch.tensor(new_center, dtype=torch.float))
 
             post_points = torch.tensor(post_points).float()
 
@@ -1069,6 +1069,12 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
             mad: torch.Tensor = torch.mean(torch.abs(centered_points), dim=(0,1), keepdim=True) # 1x1x(n+1) tensor
             mad = mad.clamp(min=1e-6) # regularization, prevent divide by zero 
             normed_points = centered_points/mad 
+            
+            '''Centers after normalization'''
+            for i in range(len(samples_times)):
+                points = normed_points[:, int(samples_times[i]//ts), 1:]
+                new_center = torch.mean(points, dim=0) # probably won't be used, delete if unused in final product
+                centers.append(new_center)
 
             for i in range(len(samples_times)):
                 optimizer.zero_grad()
@@ -1164,17 +1170,23 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     stars = []
     accuracy = []
 
+    ts_mean = ts_mean.squeeze()[1:].detach().numpy() # now a nx1 array
     mad = mad.squeeze()[1:].detach().numpy() # mad should now be nx1 np array that should hopefully broadcast with the basis appropriately
     mad = np.diag(mad) # values on diagonals, now basis @ mad should scale each column and thus each dimension properly 
+    print(mad)
 
     for i in range(len(test_times)):
         points = post_points[:, i, 1:]
+
+        # print(points-ts_mean)
+        points = (points-ts_mean)/np.diagonal(mad) # normalizing again
+
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
         flat_bases: torch.Tensor = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), test_times[i].unsqueeze(0)), dim=-1))
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)[0].detach().numpy()
 
-        basis = basis@mad # should scale all rows of basis
+        # basis = basis@mad # should scale all rows of basis
 
 
         new_star = StarSet(center, basis, C, g)
@@ -1185,19 +1197,19 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
         # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,1]) # just for plotting
-        # plt.scatter(points[:,0], points[:,1]) # just for plotting
+        plt.scatter(points[:,0], points[:,1]) # just for plotting
 
     accuracy = np.array(accuracy)
 
     if verbose:
-        print(f'Average accuracy: {np.mean(accuracy):.2f}., Worst Accuracy: {np.min(accuracy):.2f}') # this will get printed out for each node -- to not have this behavior, just store it in some global
+        print(f'Average accuracy: {np.mean(accuracy):.2f}., Worst Accuracy: {np.min(accuracy):.2f}, Best Accuracy: {np.max(accuracy):.2f}') # this will get printed out for each node -- to not have this behavior, just store it in some global
     # plot_stars_points_nonit_nd(stars, post_points, 0, 2)
     return stars
 
 def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: np.ndarray):
     n = initial.n
     new_center = np.mean(points, axis=0)
-    r_basis = 1e-6*np.eye(n)+new_basis
+    r_basis = 1e-6*np.eye(n)+new_basis 
     cont = lambda p: np.linalg.norm(np.maximum(initial.C@np.linalg.inv(r_basis)@(p-new_center)-initial.g, 0))
     contain = np.sum(np.stack([cont(point) == 0 for point in points]))
     # for point in points:
