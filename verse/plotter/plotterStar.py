@@ -141,11 +141,15 @@ def plot_stars_time(root: AnalysisTree, dim: int=0, title: str = 'Star Set Reach
                     post_points.append(scenario_agent.TC_simulate(mode, point, T, ts, lane_map).tolist())
                 post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
                 for t in range(len(post_points[0])):
-                    plt.scatter(np.ones(len(post_points))*post_points[0,t,0]+t0, post_points[:,t,dim+1]) 
+                    plt.scatter(np.ones(len(post_points))*post_points[0,t,0]+t0, post_points[:,t,dim+1], color=colors[j%7]) 
 
+        # for i in range(len(verts)):
+        #     v_mode = verts[i]
+        #     plt.fill_between(v_mode[:, 0], v_mode[:, 1], v_mode[:, 2], color=colors[j%7], alpha=0.5, label=f'Agent {agent}, Mode {mode}')
+        # j+=1
         for i in range(len(verts)):
             v_mode = verts[i]
-            plt.fill_between(v_mode[:, 0], v_mode[:, 1], v_mode[:, 2], color=colors[j%7], alpha=0.5, label=f'Agent {agent}')
+            plt.fill_between(v_mode[:, 0], v_mode[:, 1], v_mode[:, 2], color=colors[i*j%7], alpha=0.5, label=f'Agent {agent}, Mode: {modes[i]}')
         j+=1
     
         

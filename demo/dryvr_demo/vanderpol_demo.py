@@ -24,7 +24,7 @@ def plot_stars(stars: List[StarSet], dim1: int = None, dim2: int = None):
 if __name__ == "__main__":
     input_code_name = "./demo/dryvr_demo/vanderpol_controller.py"
     scenario = Scenario(ScenarioConfig(parallel=False))
-    scenario.config.model_path = 'vanderpol_sll_normalized'
+    scenario.config.model_path = 'vanderpol_sll'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
