@@ -1068,10 +1068,10 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
             centered_points = post_points-ts_mean # centered around 0 vector in all dimensions (N x Ts x (n+1))
             mad: torch.Tensor = torch.abs(centered_points) # NxTsx(n+1) tensor -- variation in each dimension
             mad = torch.max(mad, dim=0, keepdim=True).values # 1xTsx(n+1) tensor -- max variation in each dimension over all times
-            mad = torch.mean(mad, dim=1, keepdim=True) #1x1x(n+1) tensor -- 
             mad = mad.clamp(min=1e-6) # regularization, prevent divide by zero 
             normed_points = centered_points/mad # points centered around 0 with radius <=1
             
+
             '''Centers after normalization'''
             for i in range(len(samples_times)): # unsure of why I'm doing it like this
                 points = normed_points[:, int(samples_times[i]//ts), 1:]
@@ -1110,7 +1110,7 @@ def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None
         if (epoch+1)%10==0: 
             print(f'\nEpoch [{epoch + 1}/{num_epochs}] \n_____________\n')
             # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
-            for i in range(0, len(samples_times), len(samples_times)//20):
+            for i in range(0, len(samples_times), max(len(samples_times)//20, 1)):
                 x0 = torch.tensor(initial.center, dtype=torch.float)
                 flat_bases = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), samples_times[i].unsqueeze(0)), dim=-1))
                 n = int(len(flat_bases) ** 0.5) 
@@ -1175,15 +1175,13 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     accuracy = []
 
     ts_mean = ts_mean.detach().numpy() # NxTsx(n+1) array
-    # mad = mad.detach().numpy() # mad should now be nx1 np array that should hopefully broadcast with the basis appropriately
-    mad = mad.squeeze()[1:].detach().numpy()
-    print(f'Normalization factor {mad}')
-    mad = np.diag(mad)
-
-    # normed_points = (post_points-ts_mean)/mad
-
+    mad = mad.detach().numpy()[0] # Tsxn+1 array
+    # normed_points = (post_points[:,:-1]-ts_mean)/mad
     for i in range(len(test_times)):
         # points = normed_points[:, i, 1:]
+        mad_t = mad[i][1:] # n array
+        mad_dt = np.diag(mad_t) # diagonalize the array, keep arrays separate for printing
+
         points = post_points[:, i, 1:]
 
         center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
@@ -1191,7 +1189,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
         n = int(len(flat_bases) ** 0.5) 
         basis = flat_bases.view(-1, n, n)[0].detach().numpy()
 
-        basis = mad@basis # should scale all rows of basis
+        basis = mad_dt@basis # should scale all rows of basis
 
         new_star = StarSet(center, basis, C, g)
         stars.append(new_star)    
@@ -1200,8 +1198,8 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(new_star, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,4]) # just for plotting
-        plt.scatter(points[:,0], points[:,1]) # just for plotting
+        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,0]) # just for plotting
+        # plt.scatter(points[:,0], points[:,1]) # just for plotting
 
     accuracy = np.array(accuracy)
 
@@ -1210,6 +1208,9 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     # plot_stars_points_nonit_nd(stars, post_points, 0, 2)
     return stars
 
+'''
+Likely broken, don't know cause
+'''
 def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: np.ndarray):
     n = initial.n
     new_center = np.mean(points, axis=0)
