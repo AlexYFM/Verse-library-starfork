@@ -209,24 +209,7 @@ class StarSet:
 
         else:
             # could potentially allow users to specify hyperparameters using a specific scenario config parameter, like model_hyperparams for example
-            if model_hparams is None:
-                raise Exception('No hyperparameters given to NN. Expected a dict with at least big_initial_set as a tuple form of a hyperparameter')
-            model: PostNN
-            if model_path is None: # just get rid of this and make an actual default model path
-                model = get_model(self, sim_func, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path='default', model_hparams=model_hparams)
-            elif model_path is not None and not os.path.exists(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth"): ### needs new model per agent and per mode
-                model = get_model(self, sim_func, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, agent_id=agent_id, model_path=model_path, model_hparams=model_hparams)
-                print(f'Model trained and saved at {model_path}/{agent_id}_{mode_label}')
-                write_train_details(model_path, **model_hparams)
-            else:
-                model = create_model(self.n+self.basis.flatten().size+1, 64, self.basis.flatten().size)
-                model.load_state_dict(torch.load(f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")) # see if I can somehow get this to work at any level
-            # reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True)
-            
-            ts_mean, mad = load_norms(model_path, mode_label, agent_id)
-            reach = gen_reachtube(self, sim_func, model, mode_label, T=time_horizon, ts=time_step, lane_map=lane_map, verbose=True, ts_mean=ts_mean, mad=mad)
-            
-            # print(f"Time horizon: {time_horizon}")
+            reach = gen_starsets_post_sim(self, sim_func, time_horizon, time_step, mode_label=mode_label)
             star_tube = []
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
@@ -657,10 +640,10 @@ def sample_star(star: StarSet, N: int = 100, tol: float = 0.2) -> List[List[floa
             if misses>int(N*tol):
                 center, basis, C, g = star.center, star.basis, star.C, star.g
                 points.append(point)
-                #star.print()
-                #print(rect)
-                #print(np.maximum(C@np.linalg.inv(basis+1e-6)@(point-center)-g, 0))
-                #print("Warning: could potentially be sampling outside starset")
+                # star.print()
+                # print(rect)
+                # print(np.maximum(C@np.linalg.inv(basis+1e-6)@(point-center)-g, 0))
+                # print("Warning: could potentially be sampling outside starset")
                 # raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
     return points
 
@@ -712,7 +695,7 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
         ### think about doing post_cont_pca except with an always valid predicate, i.e., [1, 0, ...0, , -1], [1, ..., 1] -- may be able to do this with just box2poly
         if not usat: ### see if this works, could also move this in gen_starset if efficiency is more of a concern than possible compactness
             # print("Solution not found with current predicate, trying a generic predicate instead.")
-            return post_cont_pca(new_pred(old_star), derived_basis, points, True)
+            return post_cont_pca(new_pred(old_star.n), derived_basis, points, True)
         raise RuntimeError(f'Optimizer was unable to find a valid mu') # this is also hit if the function is interrupted
 
     print(model[u].as_decimal(10))
@@ -798,23 +781,22 @@ def gen_starset_grad(points: np.ndarray, old_star: StarSet) -> StarSet:
 
 ### doing post_computations using simulation then constructing star sets around each set of points afterwards -- not iterative
 ### modified N from 100 to 30 for helicopter scenario
-def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 30, no_init: bool = False, mode_label: int = None) -> List[StarSet]:
+def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 30, mode_label: int = None, lane_map: LaneMap = None) -> List[StarSet]:
     points = np.array(sample_star(old_star, N))
     post_points = []
-    if no_init: 
-        for point in points:
-            post_points.append(sim(mode=mode_label, initialCondition=point, time_bound=T, time_step=ts).tolist()[1:])
-    else:
-        for point in points:
-            # post_points.append(sim(mode=mode_label, initialCondition=point, time_bound=T, time_step=ts).tolist())
-            post_points.append(sim(mode_label, point, T, ts).tolist())
+
+    for point in points:
+        # post_points.append(sim(mode=mode_label, initialCondition=point, time_bound=T, time_step=ts).tolist())
+        post_points.append(sim(mode_label, point, T, ts, lane_map))
     post_points = np.array(post_points)
+
     stars: List[StarSet] = []
     for t in range(post_points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
         stars.append(gen_starset(post_points[:, t, 1:], old_star)) 
         # stars.append(gen_starset_grad(post_points[:, t, 1:], old_star)) ### testing out new algorithm here, could also do so in startests if I remember 
-    for t in range(post_points.shape[1]):
-        plt.scatter(post_points[:, t, 1], post_points[:, t, 2])
+    # for t in range(post_points.shape[1]):
+    #     plt.scatter(post_points[:, t, 1], post_points[:, t, 2])
+        
     return stars
 
 ### doing sim and post_cont iteratively to construct new starsets and get new points from them every ts
@@ -1160,9 +1142,10 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
     
     # initial.print()
     S = sample_star(initial, num_samples)
+    initial.print()
     post_points = []
     for point in S:
-            post_points.append(sim(mode_label, point, T, ts, lane_map).tolist())
+        post_points.append(sim(mode_label, point, T, ts, lane_map).tolist())
     post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
     
     test_times = torch.arange(0, T, ts)
@@ -1198,7 +1181,7 @@ def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: in
             accuracy.append(compute_accuracy(new_star, points, basis))
             # if (i+1)%(10) == 0:
             #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,0]) # just for plotting
+        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,5]) # just for plotting
         # plt.scatter(points[:,0], points[:,1]) # just for plotting
 
     accuracy = np.array(accuracy)
