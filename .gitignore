@@ -29,4 +29,5 @@ build/
 *.csv
 *.pth
 *.pt
+*.pkl
 model_details.txt

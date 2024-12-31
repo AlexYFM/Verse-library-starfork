@@ -13,6 +13,7 @@ from typing_extensions import List, Callable
 
 from verse.analysis.dryvr import calc_bloated_tube
 from verse.stars.star_nn_utils import *
+import pickle
 
 # import jax
 import torch
@@ -209,7 +210,21 @@ class StarSet:
 
         else:
             # could potentially allow users to specify hyperparameters using a specific scenario config parameter, like model_hyperparams for example
-            reach = gen_starsets_post_sim(self, sim_func, time_horizon, time_step, mode_label=mode_label)
+            '''Still going to store to local memory to keep learned starsets, model path a misnomer now'''
+            reach: List[StarSet]
+
+            if not os.path.exists(f'./verse/stars/learned_stars/{model_path}/{agent_id}_{mode_label}.pkl'): 
+                reach = gen_starsets_post_sim(self, sim_func, time_horizon, time_step, mode_label=mode_label, lane_map=lane_map)
+                path = f'./verse/stars/learned_stars/default' if model_path is None else f'./verse/stars/learned_stars/{model_path}'
+                os.makedirs(path, exist_ok=True)
+                with open(path+f'/{agent_id}_{mode_label}.pkl', 'wb') as f:
+                    pickle.dump(reach, f)
+                print(f'Stars saved to {path}/{agent_id}_{mode_label}.pkl')
+            else:
+                with open(f'./verse/stars/learned_stars/{model_path}/{agent_id}_{mode_label}.pkl', 'rb') as f:
+                    reach = pickle.load(f)
+                print(f'Stars loaded from ./verse/stars/learned_stars/{model_path}/{agent_id}_{mode_label}.pkl')
+            
             star_tube = []
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
@@ -554,10 +569,10 @@ class StarSet:
     ### for now, this only makes sense for zonotopes 
     ### I think I can use convex combination of stars and some nonlinear optimizer to solve for c+Va=\Sum\lambda_i(c_i+V_ia) in the future
     def combine_stars(stars: List["StarSet"]) -> "StarSet":
+        # print('____________________')
+        # print('____________________')
+        # stars[0].print()
         # if len(stars)>1:
-        #     print('____________________')
-        #     print('____________________')
-        #     stars[0].print()
         #     stars[-1].print()
         # print(f'{len(stars)} star sets to be combined')
         # print('____________________')
@@ -638,13 +653,13 @@ def sample_star(star: StarSet, N: int = 100, tol: float = 0.2) -> List[List[floa
         else:
             misses+=1
             if misses>int(N*tol):
-                center, basis, C, g = star.center, star.basis, star.C, star.g
-                points.append(point)
+                # center, basis, C, g = star.center, star.basis, star.C, star.g
+                # points.append(point)
                 # star.print()
                 # print(rect)
                 # print(np.maximum(C@np.linalg.inv(basis+1e-6)@(point-center)-g, 0))
                 # print("Warning: could potentially be sampling outside starset")
-                # raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
+                raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
     return points
 
 # def post_cont_pca(old_star: StarSet, new_center: np.ndarray, derived_basis: np.ndarray,  points: np.ndarray) -> StarSet:
@@ -693,34 +708,16 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
         model = o.model()
     else:
         ### think about doing post_cont_pca except with an always valid predicate, i.e., [1, 0, ...0, , -1], [1, ..., 1] -- may be able to do this with just box2poly
-        if not usat: ### see if this works, could also move this in gen_starset if efficiency is more of a concern than possible compactness
-            # print("Solution not found with current predicate, trying a generic predicate instead.")
-            return post_cont_pca(new_pred(old_star.n), derived_basis, points, True)
+        # if not usat: ### see if this works, could also move this in gen_starset if efficiency is more of a concern than possible compactness
+        #     # print("Solution not found with current predicate, trying a generic predicate instead.")
+        #     return post_cont_pca(new_pred(old_star.n), derived_basis, points, True)
+        old_star.print()
         raise RuntimeError(f'Optimizer was unable to find a valid mu') # this is also hit if the function is interrupted
 
-    print(model[u].as_decimal(10))
+    print(model[u].as_decimal(5))
     new_center = np.array([float(model[c[i]].as_fraction()) for i in range(len(c))])
-    return StarSet(new_center, np.array(derived_basis), C, g * float(model[u].as_fraction()))
+    return StarSet(new_center, np.array(derived_basis) * float(model[u].as_fraction()), C, g)
 
-# alternatively this could just take the dimension of the starset
-def new_pred(old_star: StarSet) -> StarSet:
-    cols = old_star.C.shape[1] # should be == old_star.dimension
-
-    new_C = []
-    ### this loop generates a zonotope predicate, i.e., each alpha gets [-1, 1] range 
-    for i in range(cols): ### there' probably a faster way to do this, possibly using a lambda function
-        col_i = []
-        for j in range(cols*2):
-            if i*2==j:
-                col_i.append(1)
-            elif i*2+1==j:
-                col_i.append(-1)
-            else:
-                col_i.append(0)
-        new_C.append(col_i)
-    new_C = np.transpose(np.array(new_C))
-    new_g = np.ones(cols*2)
-    return StarSet(old_star.center, old_star.basis, new_C, new_g)
 
 def new_pred(dimension: int) -> Tuple[np.ndarray, np.ndarray]:
     cols = dimension # should be == old_star.dimension
@@ -753,31 +750,6 @@ def gen_starset(points: np.ndarray, old_star: StarSet) -> StarSet:
     derived_basis = (pca.components_.T @ np.diag(scale)).T # scaling each component by sqrt of dimension
     # print(derived_basis, '\n_____\n')
     return post_cont_pca(old_star, derived_basis, points)
-
-def starset_loss(C: np.ndarray, g: np.ndarray, derived_basis: np.ndarray, points: np.ndarray, mu: float) -> float:
-    output = mu
-    x_0 = np.mean(points, axis=0) # this should be a parameter to optimze in the future but hold it here for now
-    V_m1 = np.linalg.inv(derived_basis.T) # derived_basis assumed to be invertible, may not necessarily be true right now
-    for point in points:
-        contain = C@V_m1@(point-x_0)-mu*g ### kxm mxm nx1 - kx1 = kx1, should work so long as m=n which is the case if doing by PCA
-        output += jax.numpy.linalg.norm(jax.nn.relu(contain), ord=np.inf) ### unsure if l inf norm or any norm is the correct approach
-    return output
-
-def gen_starset_grad(points: np.ndarray, old_star: StarSet) -> StarSet:
-    new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-    pca: PCA = PCA(n_components=points.shape[1])
-    pca.fit(points)
-    scale = np.sqrt(pca.explained_variance_)
-    derived_basis = (pca.components_.T @ np.diag(scale)).T # scaling each component by sqrt of dimension
-    
-    grad = jax.grad(starset_loss, argnums=4) # following Yangge's example
-    mu = 1.0
-    lr = 0.01 # assuming this is a hyperparameter for adjustment rate
-    for i in range(100):
-        grads = grad(old_star.C, old_star.g, derived_basis, points, mu)
-        mu = mu - lr*grads ### does this work? apparently I should change grad to specify an argnum=3, but unsure if this is correct
-    print(mu)
-    return StarSet(new_center, derived_basis, old_star.C, mu*old_star.g)
 
 ### doing post_computations using simulation then constructing star sets around each set of points afterwards -- not iterative
 ### modified N from 100 to 30 for helicopter scenario

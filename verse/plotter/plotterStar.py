@@ -110,6 +110,8 @@ def plot_stars_time(root: AnalysisTree, dim: int=0, title: str = 'Star Set Reach
     for agent in agent_list:
         for node in root.nodes:
             s_mode = []
+            if not node.trace:
+                continue
             for star in node.trace[agent]:
                 s_mode.append(star)
             stars.append(s_mode)
