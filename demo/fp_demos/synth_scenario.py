@@ -122,5 +122,6 @@ if __name__ == "__main__":
     # fig.show()
 
     trace = scenario.verify(7, 0.1)
-    plot_stars_time(trace, 0)
+    # plot_stars_time(trace, 0)
+    plot_reachtube_stars(trace, filter = 2)
     plt.show()

@@ -57,4 +57,5 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
 
     trace = scenario.verify(7, 0.01)
+    plot_reachtube_stars(trace, filter = 2)
     ### this works, but takes around a minute

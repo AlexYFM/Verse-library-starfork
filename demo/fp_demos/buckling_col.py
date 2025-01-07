@@ -116,4 +116,4 @@ if __name__ == "__main__":
         stars.append(star[1])
     plot_stars_points(stars)
     plt.show()
-    plot_reachtube_stars(trace)
+    # plot_reachtube_stars(trace, filter =2)

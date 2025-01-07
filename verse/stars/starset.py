@@ -213,7 +213,8 @@ class StarSet:
             '''Still going to store to local memory to keep learned starsets, model path a misnomer now'''
             reach: List[StarSet]
 
-            if not os.path.exists(f'./verse/stars/learned_stars/{model_path}/{agent_id}_{mode_label}.pkl'): 
+            path = 'default' if model_path is None else model_path
+            if not os.path.exists(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl'): 
                 reach = gen_starsets_post_sim(self, sim_func, time_horizon, time_step, mode_label=mode_label, lane_map=lane_map)
                 path = f'./verse/stars/learned_stars/default' if model_path is None else f'./verse/stars/learned_stars/{model_path}'
                 os.makedirs(path, exist_ok=True)
@@ -221,9 +222,9 @@ class StarSet:
                     pickle.dump(reach, f)
                 print(f'Stars saved to {path}/{agent_id}_{mode_label}.pkl')
             else:
-                with open(f'./verse/stars/learned_stars/{model_path}/{agent_id}_{mode_label}.pkl', 'rb') as f:
+                with open(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl', 'rb') as f:
                     reach = pickle.load(f)
-                print(f'Stars loaded from ./verse/stars/learned_stars/{model_path}/{agent_id}_{mode_label}.pkl')
+                print(f'Stars loaded from ./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl')
             
             star_tube = []
             for i in range(len(reach)):
