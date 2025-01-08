@@ -51,6 +51,8 @@ class ScenarioConfig:
     """If not None, then NN algorithm either tries to load from model_path or trains a new model and saves it at model_path."""
     model_hparams: Dict = None
     """A dictionary containing hyperparameters like large initial set (required), learning rate, propertion of initial set to sample, etc."""
+    overwrite: bool = False
+    """Controls whether or not verify using starset overwrites the previously learned starsets."""
 
 class Scenario:
     """A simulation/verification scenario."""

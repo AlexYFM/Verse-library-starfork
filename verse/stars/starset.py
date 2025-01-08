@@ -168,7 +168,7 @@ class StarSet:
     TO-DO: see if I can toggle which alg to use (DryVR, mine) based on some parameter, see if a new scenarioconfig can be added without much fuss
     '''
     def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,nn_enable,model_path,model_hparams
-                        , agent_id: str):
+                        , agent_id: str, overwrite: bool):
         #get rectangle
         # self.print()
         # print(f'Current agent: {agent_id}, mode: {mode_label}')
@@ -214,7 +214,7 @@ class StarSet:
             reach: List[StarSet]
 
             path = 'default' if model_path is None else model_path
-            if not os.path.exists(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl'): 
+            if not os.path.exists(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl') or overwrite: 
                 reach = gen_starsets_post_sim(self, sim_func, time_horizon, time_step, mode_label=mode_label, lane_map=lane_map)
                 path = f'./verse/stars/learned_stars/default' if model_path is None else f'./verse/stars/learned_stars/{model_path}'
                 os.makedirs(path, exist_ok=True)
@@ -713,9 +713,13 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
         #     # print("Solution not found with current predicate, trying a generic predicate instead.")
         #     return post_cont_pca(new_pred(old_star.n), derived_basis, points, True)
         old_star.print()
+        print(derived_basis)
         raise RuntimeError(f'Optimizer was unable to find a valid mu') # this is also hit if the function is interrupted
 
-    print(model[u].as_decimal(5))
+    # print(model[u].as_decimal(5))
+    if float(model[u].as_fraction()) > 10:
+        print(derived_basis)
+        print(float(model[u].as_fraction()))
     new_center = np.array([float(model[c[i]].as_fraction()) for i in range(len(c))])
     return StarSet(new_center, np.array(derived_basis) * float(model[u].as_fraction()), C, g)
 
@@ -764,7 +768,8 @@ def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: fl
     post_points = np.array(post_points)
 
     stars: List[StarSet] = []
-    for t in range(post_points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
+    # for t in range(post_points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
+    for t in tqdm(range(post_points.shape[1]), desc="Training Progress"):
         stars.append(gen_starset(post_points[:, t, 1:], old_star)) 
         # stars.append(gen_starset_grad(post_points[:, t, 1:], old_star)) ### testing out new algorithm here, could also do so in startests if I remember 
     # for t in range(post_points.shape[1]):

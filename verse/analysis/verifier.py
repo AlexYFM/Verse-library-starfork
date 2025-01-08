@@ -144,6 +144,7 @@ class Verifier:
         nn_enable=True,
         model_path:str=None,
         model_hparams:Dict=None,
+        overwrite:bool=False,
     ):
         #this should return a list of stars for one time step along the horizon
         """
@@ -217,7 +218,8 @@ class Verifier:
             nn_enable=nn_enable,
             model_path=model_path,
             model_hparams=model_hparams,
-            agent_id=agent_id
+            agent_id=agent_id,
+            overwrite=overwrite
             )
 
            
@@ -458,7 +460,8 @@ class Verifier:
                         lane_map=consts.lane_map,
                         nn_enable=config.nn_enable,
                         model_path=config.model_path,
-                        model_hparams=config.model_hparams
+                        model_hparams=config.model_hparams,
+                        overwrite=config.overwrite
                     )
                     if config.incremental:
                         cache_tube_updates.extend(cache_tube_update)
