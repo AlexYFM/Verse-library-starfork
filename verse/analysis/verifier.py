@@ -1014,7 +1014,7 @@ class Verifier:
                 state_dict = {
                     aid: (node.trace[aid][0:2], node.mode[aid], node.static[aid]) for aid in node.agent
                 }
-            cont_var_dict_template, discrete_variable_dict, length_dict = sensor.sense(agent, state_dict, track_map, False)
+            cont_var_dict_template, discrete_variable_dict, length_dict = sensor.sense(agent, state_dict, track_map, False) # error occuring here with mp0 
             # TODO-PARSER: Get equivalent for this function
             # Construct the guard expression
             guard_expression = GuardExpressionAst([path.cond_veri])

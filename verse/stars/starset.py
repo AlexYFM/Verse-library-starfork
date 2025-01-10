@@ -654,13 +654,13 @@ def sample_star(star: StarSet, N: int = 100, tol: float = 0.2) -> List[List[floa
         else:
             misses+=1
             if misses>int(N*tol):
-                # center, basis, C, g = star.center, star.basis, star.C, star.g
-                # points.append(point)
-                # star.print()
-                # print(rect)
-                # print(np.maximum(C@np.linalg.inv(basis+1e-6)@(point-center)-g, 0))
-                # print("Warning: could potentially be sampling outside starset")
-                raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
+                center, basis, C, g = star.center, star.basis, star.C, star.g
+                points.append(point)
+                star.print()
+                print(rect)
+                print(np.maximum(C@np.linalg.inv(basis+1e-6*np.eye(star.dimension()))@(point-center)-g, 0))
+                print("Warning: could potentially be sampling outside starset")
+                # raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
     return points
 
 # def post_cont_pca(old_star: StarSet, new_center: np.ndarray, derived_basis: np.ndarray,  points: np.ndarray) -> StarSet:
@@ -676,7 +676,7 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
     center, basis, C, g = old_star.center, old_star.basis, old_star.C, old_star.g
     # derived_basis = np.around(derived_basis, decimals=10) 
     # points = np.around(points, decimals=10)
-    new_center = np.around(np.average(points, axis=0), decimals=15)
+    new_center = np.average(points, axis=0)
     alpha = [RealVector(f'a_{i}', C.shape[1]) for i in range(points.shape[0])]
     u = Real('u')
     c = RealVector('i', old_star.dimension())
@@ -714,12 +714,15 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
         #     return post_cont_pca(new_pred(old_star.n), derived_basis, points, True)
         old_star.print()
         print(derived_basis)
+        print(np.var(points, axis=0))
         raise RuntimeError(f'Optimizer was unable to find a valid mu') # this is also hit if the function is interrupted
 
     # print(model[u].as_decimal(5))
     if float(model[u].as_fraction()) > 10:
         print(derived_basis)
         print(float(model[u].as_fraction()))
+        print(np.var(points, axis=0))
+        print(f'\nInf: {np.min(points, axis=0)}\n Sup: {np.max(points, axis=0)}')
     new_center = np.array([float(model[c[i]].as_fraction()) for i in range(len(c))])
     return StarSet(new_center, np.array(derived_basis) * float(model[u].as_fraction()), C, g)
 
@@ -747,14 +750,23 @@ def new_pred(dimension: int) -> Tuple[np.ndarray, np.ndarray]:
 ### expects an input with shape N (num points) x n (state dimenion) NOT N x n+1 (state dimension + time)
 ### this may get an exception if mu can't be generated, either figure out what to do about that or modify post_cont_pca s.t. it doesn't throw an error
 def gen_starset(points: np.ndarray, old_star: StarSet) -> StarSet:
-    new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
+    
+    # first, normalize the dataset 
+    mean = np.mean(points, axis=0)
+    std = np.std(points, axis=0) 
+    std[std<1e-16] = 1 # don't normalize dimensions with near zero variance -- some fixed point errors possibly occuring
+    norm_points = (points-mean)/std
+
     pca: PCA = PCA(n_components=points.shape[1])
-    pca.fit(points)
+    # pca.fit(points)
+    pca.fit(norm_points)
     scale = np.sqrt(pca.explained_variance_)
     # print(pca.components_.T, '...', scale, '\n_____\n', )
     derived_basis = (pca.components_.T @ np.diag(scale)).T # scaling each component by sqrt of dimension
     # print(derived_basis, '\n_____\n')
-    return post_cont_pca(old_star, derived_basis, points)
+    # return post_cont_pca(old_star, derived_basis, points)
+    norm_star = post_cont_pca(old_star, derived_basis, norm_points)
+    return StarSet(mean, norm_star.basis*std, norm_star.C, norm_star.g) # return the unnormalized starset 
 
 ### doing post_computations using simulation then constructing star sets around each set of points afterwards -- not iterative
 ### modified N from 100 to 30 for helicopter scenario

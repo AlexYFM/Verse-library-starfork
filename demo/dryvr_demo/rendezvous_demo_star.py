@@ -64,8 +64,8 @@ if __name__ == "__main__":
     #     ],
     # )
 
-    scenario.config.overwrite = True
-    traces = scenario.verify(50, 1)
+    scenario.config.overwrite = False
+    traces = scenario.verify(200, 1)
     # plot_reachtube_stars(traces, filter=1)
     plot_stars_time(traces, 2)
     # plot_stars_time(traces, 5, scenario_agent=car)
