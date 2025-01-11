@@ -754,7 +754,7 @@ def gen_starset(points: np.ndarray, old_star: StarSet) -> StarSet:
     # first, normalize the dataset 
     mean = np.mean(points, axis=0)
     std = np.std(points, axis=0) 
-    std[std<1e-16] = 1 # don't normalize dimensions with near zero variance -- some fixed point errors possibly occuring
+    std[std==0] = 1 # don't normalize dimensions with near zero variance -- some fixed point errors possibly occuring
     norm_points = (points-mean)/std
 
     pca: PCA = PCA(n_components=points.shape[1])

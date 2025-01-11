@@ -24,7 +24,7 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # modify mode list input
-    scenario.config.model_path = 'spacecraft_small_init_sublinloss_fit_loss_normed'
+    scenario.config.model_path = 'spacecraft_small_init_sublinloss_fit_loss_normed_test'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
@@ -64,8 +64,8 @@ if __name__ == "__main__":
     #     ],
     # )
 
-    scenario.config.overwrite = False
-    traces = scenario.verify(200, 1)
+    scenario.config.overwrite = True
+    traces = scenario.verify(50, 1)
     # plot_reachtube_stars(traces, filter=1)
     plot_stars_time(traces, 2)
     # plot_stars_time(traces, 5, scenario_agent=car)
