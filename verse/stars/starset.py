@@ -753,20 +753,27 @@ def gen_starset(points: np.ndarray, old_star: StarSet) -> StarSet:
     
     # first, normalize the dataset 
     mean = np.mean(points, axis=0)
-    std = np.std(points, axis=0) 
-    std[std==0] = 1 # don't normalize dimensions with near zero variance -- some fixed point errors possibly occuring
-    norm_points = (points-mean)/std
+    # std = np.std(points, axis=0) 
+    # std[std==0] = 1 # don't normalize dimensions with near zero variance -- some fixed point errors possibly occuring
+    # norm_points = (points-mean)/std
+    centered_points = points - mean 
 
-    pca: PCA = PCA(n_components=points.shape[1])
-    # pca.fit(points)
-    pca.fit(norm_points)
-    scale = np.sqrt(pca.explained_variance_)
-    # print(pca.components_.T, '...', scale, '\n_____\n', )
-    derived_basis = (pca.components_.T @ np.diag(scale)).T # scaling each component by sqrt of dimension
+    # pca: PCA = PCA(n_components=points.shape[1])
+    # # pca.fit(points)
+    # pca.fit(norm_points)
+    # scale = np.sqrt(pca.explained_variance_)
+    # # print(pca.components_.T, '...', scale, '\n_____\n', )
+    # derived_basis = (pca.components_.T @ np.diag(scale)).T # scaling each component by sqrt of dimension
+    
+    _, S, V = np.linalg.svd(centered_points, full_matrices=False)
+    derived_basis = (V.T @ np.diag(np.sqrt(S))).T
+
     # print(derived_basis, '\n_____\n')
     # return post_cont_pca(old_star, derived_basis, points)
-    norm_star = post_cont_pca(old_star, derived_basis, norm_points)
-    return StarSet(mean, norm_star.basis*std, norm_star.C, norm_star.g) # return the unnormalized starset 
+    # norm_star = post_cont_pca(old_star, derived_basis, norm_points)
+    norm_star = post_cont_pca(old_star, derived_basis, centered_points)
+    # return StarSet(mean, norm_star.basis*std, norm_star.C, norm_star.g) # return the unnormalized starset 
+    return StarSet(mean, norm_star.basis, norm_star.C, norm_star.g) # return the unnormalized starset 
 
 ### doing post_computations using simulation then constructing star sets around each set of points afterwards -- not iterative
 ### modified N from 100 to 30 for helicopter scenario
