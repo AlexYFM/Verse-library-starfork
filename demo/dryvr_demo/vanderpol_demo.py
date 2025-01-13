@@ -24,7 +24,7 @@ def plot_stars(stars: List[StarSet], dim1: int = None, dim2: int = None):
 if __name__ == "__main__":
     input_code_name = "./demo/dryvr_demo/vanderpol_controller.py"
     scenario = Scenario(ScenarioConfig(parallel=False))
-    scenario.config.model_path = 'vdp_pca_test_norm'
+    scenario.config.model_path = 'vdp_svd'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
@@ -64,6 +64,8 @@ if __name__ == "__main__":
     scenario.add_agent(car)
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     scenario.set_sensor(BaseStarSensor())
+    # scenario.config.overwrite = True
+
     traces = scenario.verify(7, 0.1)
     
     car1 = traces.nodes[0].trace['car1']

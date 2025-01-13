@@ -55,6 +55,7 @@ if __name__ == "__main__":
     scenario.add_agent(cell)
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     scenario.set_sensor(BaseStarSensor())
+    scenario.config.overwrite = True
 
     trace = scenario.verify(7, 0.01)
     plot_reachtube_stars(trace, filter = 2)

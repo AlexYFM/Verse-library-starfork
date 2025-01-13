@@ -111,7 +111,7 @@ if __name__ == "__main__":
     PT = PowerTrainAgent('PT', file_name=input_code_name)
 
     scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False))
-    scenario.config.model_path = 'powertrain_sublin'
+    scenario.config.model_path = 'powertrain_svd'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
