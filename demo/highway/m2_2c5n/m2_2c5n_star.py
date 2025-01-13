@@ -146,6 +146,11 @@ if __name__ == "__main__":
 
     scenario.config.overwrite = False
     trace = scenario.verify(80, 0.05)
+
+    '''
+    NOTE:
+    still need to finish verification, on like node 9 or something
+    '''
     plot_reachtube_stars(trace,tmp_map, filter=10)
     # if bench.config.compare:
     #     traces1, traces2 = bench.compare_run(80, time_step)
