@@ -24,8 +24,11 @@ from scipy.integrate import ode
 import pandas as pd
 from tqdm import tqdm
 import os
+import hashlib
 import gurobipy as gp
 from gurobipy import GRB
+
+
 class StarSet:
     """
     StarSet
@@ -214,17 +217,19 @@ class StarSet:
             reach: List[StarSet]
 
             path = 'default' if model_path is None else model_path
-            if not os.path.exists(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl') or overwrite: 
+            metadata = f'{hash(self)}__{time_horizon}__{time_step}'
+
+            if overwrite or not os.path.exists(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}_{metadata}.pkl'): 
                 reach = gen_starsets_post_sim(self, sim_func, time_horizon, time_step, mode_label=mode_label, lane_map=lane_map)
                 path = f'./verse/stars/learned_stars/default' if model_path is None else f'./verse/stars/learned_stars/{model_path}'
                 os.makedirs(path, exist_ok=True)
-                with open(path+f'/{agent_id}_{mode_label}.pkl', 'wb') as f:
+                with open(path+f'/{agent_id}_{mode_label}_{metadata}.pkl', 'wb') as f:
                     pickle.dump(reach, f)
-                print(f'Stars saved to {path}/{agent_id}_{mode_label}.pkl')
+                print(f'Stars saved to ./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}_{metadata}.pkl')
             else:
-                with open(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl', 'rb') as f:
+                with open(f'./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}_{metadata}.pkl', 'rb') as f:
                     reach = pickle.load(f)
-                print(f'Stars loaded from ./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}.pkl')
+                print(f'Stars loaded from ./verse/stars/learned_stars/{path}/{agent_id}_{mode_label}_{metadata}.pkl')
             
             star_tube = []
             for i in range(len(reach)):
@@ -616,6 +621,14 @@ class StarSet:
 
     def sample(self, num_samples: int=100)->List[List[float]]:
         return sample_star(self, num_samples)
+    
+    def __hash__(self): # there's a small but non-zero chance of a hash collision, should be extremely rare though
+        return int(hashlib.sha256(
+            np.ascontiguousarray(self.C).tobytes()+
+            np.ascontiguousarray(self.g).tobytes()+
+            np.ascontiguousarray(self.basis).tobytes()+
+            np.ascontiguousarray(self.center).tobytes()
+        ).hexdigest(), 16)
 
 class HalfSpace:
     '''

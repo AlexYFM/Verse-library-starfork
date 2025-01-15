@@ -151,7 +151,7 @@ if __name__ == "__main__":
     NOTE:
     still need to finish verification, on like node 9 or something
     '''
-    plot_reachtube_stars(trace,tmp_map, filter=10)
+    plot_reachtube_stars(trace,tmp_map, filter=2)
     # if bench.config.compare:
     #     traces1, traces2 = bench.compare_run(80, time_step)
     #     exit(0)
