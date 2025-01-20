@@ -193,13 +193,12 @@ class GuardExpressionAst:
             # print(agent_states)
             # print(agent_vars)
             for agent in agent_states.keys():
-                #print(agent)
                 agent_states[agent].add_constraints(cur_solver, agent_vars[agent], agent)
             #construct the border of the hyperrectangle at a specific time
             #hyperrectangle = reach(t)
             #breakpoint()
-            for agent in agent_states.keys():
-                agent_states[agent].add_constraints(cur_solver, agent_vars[agent], agent)
+            # for agent in agent_states.keys():
+            #     agent_states[agent].add_constraints(cur_solver, agent_vars[agent], agent)
             #guard \cap hyperrectangle =/= empty set
             # if false, then they are disjoint
             #breakpoint()
