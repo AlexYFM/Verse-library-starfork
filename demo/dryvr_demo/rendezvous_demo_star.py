@@ -10,6 +10,12 @@ from verse.analysis.verifier import ReachabilityMethod
 from verse.stars.starset import *
 
 from verse.sensor.base_sensor_stars import *
+
+import time
+import plotly.graph_objects as go
+from verse.plotter.plotterStar import *
+from verse.utils.star_diams import *
+
 class CraftMode(Enum):
     ProxA = auto()
     ProxB = auto()
@@ -24,7 +30,7 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # modify mode list input
-    scenario.config.model_path = 'spacecraft_svd'
+    scenario.config.model_path = 'spacecraft_svd_bench_large'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
@@ -63,9 +69,14 @@ if __name__ == "__main__":
     #         tuple([CraftMode.ProxA]),
     #     ],
     # )
-
+    
     scenario.config.overwrite = False
+    start = time.time()
     traces = scenario.verify(200, 1)
+    end = time.time()
+    print(f'Time: {end-start}')
+    diams = time_step_diameter(traces, 200, 1)
+    print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
     # plot_reachtube_stars(traces, filter=1)
     plot_stars_time(traces, 2)
     # plot_stars_time(traces, 5, scenario_agent=car)

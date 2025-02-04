@@ -8,6 +8,9 @@ import plotly.graph_objects as go
 from enum import Enum, auto
 
 from verse.sensor.base_sensor_stars import *
+import time
+from verse.utils.star_diams import *
+
 
 class AgentMode(Enum):
     Default = auto()
@@ -24,7 +27,7 @@ def plot_stars(stars: List[StarSet], dim1: int = None, dim2: int = None):
 if __name__ == "__main__":
     input_code_name = "./demo/dryvr_demo/vanderpol_controller.py"
     scenario = Scenario(ScenarioConfig(parallel=False))
-    scenario.config.model_path = 'vdp_svd'
+    scenario.config.model_path = 'vdp_svd_bench'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
@@ -43,8 +46,10 @@ if __name__ == "__main__":
     # scenario.add_agent(car)
     # scenario.set_sensor(FakeSensor2())
     # modify mode list input
-    basis = np.array([[1, 0], [0, 1]]) * np.diag([0.1, 0.1])
-    center = np.array([1.40,2.30])
+    basis = np.diag([0.15, 0.05])
+    center = np.array([1.40,2.3])
+    # basis = np.diag([0.005, 0.005])
+    # center = np.array([1.255, 2.255])
     C = np.transpose(np.array([[1,-1,0,0],[0,0,1,-1]]))
     g = np.array([1,1,1,1])
 
@@ -66,15 +71,31 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     # scenario.config.overwrite = True
 
+    start = time.time()
     traces = scenario.verify(7, 0.1)
-    
+    end = time.time()
+    print(f'Run time: {end-start}')
+    diams = time_step_diameter(traces, 7, 0.1)
+    print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
+    print(sum(diams), '\n', len(diams))
+    # exit()
     car1 = traces.nodes[0].trace['car1']
     car1 = [star[1] for star in car1]
     
     # for star in car1:
     #     print(star.center, star.basis, star.C, star.g, '\n --------')
-    plot_stars(car1, 0, 1)
-    # plot_stars_time(traces, 0, sim=vanderpol_agent.TC_simulate, scenario_agent=car)
+    # plot_stars(car1, 0, 1)
+    S = sample_star(StarSet(center, basis, C, g), N=30)
+    St = []
+    for p in S: 
+        St.append(car.TC_simulate((AgentMode.Default), p, 7, 0.1).tolist())
+    St = np.array(St) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
+    for t in range(len(St[0])):
+        plt.scatter(St[:,t,1], St[:,t,2], color='black') 
+    plot_reachtube_stars(traces, filter=1)
+
+    exit()
+    plot_stars_time(traces, 0, sim=vanderpol_agent.TC_simulate, scenario_agent=car)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 0, 1, [0, 1], "lines", "trace")
     # fig.show()

@@ -7,7 +7,9 @@ from verse.plotter.plotter2D import *
 import sys
 import plotly.graph_objects as go
 
-
+import time
+from verse.plotter.plotterStar import *
+from verse.utils.star_diams import *
 class AgentMode(Enum):
     Normal = auto()
     SwitchLeft = auto()
@@ -72,11 +74,13 @@ if __name__ == "__main__":
     #                          }
     #                         )
     # traces.dump(os.path.join(script_dir, "output6_neureach.json")
-    time_step = 0.05
+    time_step = 0.1
     if bench.config.compare:
         traces1, traces2 = bench.compare_run(40, time_step)
         exit(0)
     traces = bench.run(40, time_step)
+    diams = time_step_diameter_rect(traces, 40, time_step)
+    print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
     if bench.config.dump:
         traces.dump(os.path.join(script_dir, "output6_dryvr.json"))
     if bench.config.plot:

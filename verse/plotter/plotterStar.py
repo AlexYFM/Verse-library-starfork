@@ -9,7 +9,7 @@ from plotly.graph_objs.scatter import Marker
 from verse.analysis.analysis_tree import AnalysisTree, AnalysisTreeNode
 from verse.map.lane_map import LaneMap
 
-colors = ['orange', 'blue', 'green', 'red', 'yellow', 'purple', 'teal']
+colors = ['blue', 'green', 'red', 'yellow', 'purple', 'teal','orange']
 
 def plot_reachtube_stars(
     root: Union[AnalysisTree, AnalysisTreeNode],

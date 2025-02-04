@@ -43,7 +43,6 @@ def plot(
     ax.set_ylim([y_min - 1, y_max + 1])
     return fig, (x_min, x_max), (y_min, y_max)
 
-
 def plot_reachtube_tree(
     root,
     agent_id,

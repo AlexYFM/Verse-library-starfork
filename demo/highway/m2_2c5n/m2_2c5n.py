@@ -7,6 +7,7 @@ from enum import Enum, auto
 import sys
 import plotly.graph_objects as go
 
+from verse.utils.star_diams import *
 
 class AgentMode(Enum):
     Normal = auto()
@@ -77,7 +78,7 @@ if __name__ == "__main__":
             (AgentMode.Normal, TrackMode.T3),
         ],
     )
-    time_step = 0.05
+    time_step = 0.2
     if bench.config.compare:
         traces1, traces2 = bench.compare_run(80, time_step)
         exit(0)
@@ -89,6 +90,10 @@ if __name__ == "__main__":
     if bench.config.dump:
         traces.dump(os.path.join(script_dir, "output3.json"))
     bench.report()
+    diams = time_step_diameter_rect(traces, 80, 0.2)
+    print(diams[-1])
+    print(len(diams))
+    print(sum(diams))
     # start_time = time.time()
     # traces = scenario.verify(80, 0.05)
     # run_time = time.time() - start_time

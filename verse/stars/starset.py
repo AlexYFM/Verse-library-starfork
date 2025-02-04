@@ -21,6 +21,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from scipy.integrate import ode
+from scipy.spatial import HalfspaceIntersection
 import pandas as pd
 from tqdm import tqdm
 import os
@@ -667,12 +668,12 @@ def sample_star(star: StarSet, N: int = 100, tol: float = 0.2) -> List[List[floa
         else:
             misses+=1
             if misses>int(N*tol):
-                center, basis, C, g = star.center, star.basis, star.C, star.g
+                # center, basis, C, g = star.center, star.basis, star.C, star.g
                 points.append(point)
-                star.print()
-                print(rect)
-                print(np.maximum(C@np.linalg.inv(basis+1e-6*np.eye(star.dimension()))@(point-center)-g, 0))
-                print("Warning: could potentially be sampling outside starset")
+                # star.print()
+                # print(rect)
+                # print(np.maximum(C@np.linalg.inv(basis+1e-6*np.eye(star.dimension()))@(point-center)-g, 0))
+                # print("Warning: could potentially be sampling outside starset")
                 # raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
     return points
 
@@ -689,7 +690,7 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
     center, basis, C, g = old_star.center, old_star.basis, old_star.C, old_star.g
     # derived_basis = np.around(derived_basis, decimals=10) 
     # points = np.around(points, decimals=10)
-    new_center = np.average(points, axis=0)
+    # new_center = np.average(points, axis=0)
     alpha = [RealVector(f'a_{i}', C.shape[1]) for i in range(points.shape[0])]
     u = Real('u')
     c = RealVector('i', old_star.dimension())
@@ -730,12 +731,12 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
         print(np.var(points, axis=0))
         raise RuntimeError(f'Optimizer was unable to find a valid mu') # this is also hit if the function is interrupted
 
-    # print(model[u].as_decimal(5))
-    if float(model[u].as_fraction()) > 10:
-        print(derived_basis)
-        print(float(model[u].as_fraction()))
-        print(np.var(points, axis=0))
-        print(f'\nInf: {np.min(points, axis=0)}\n Sup: {np.max(points, axis=0)}')
+    # print(model[u].as_decimal(3))
+    # if float(model[u].as_fraction()) > 10:
+    #     print(derived_basis)
+    #     print(float(model[u].as_fraction()))
+    #     print(np.var(points, axis=0))
+    #     print(f'\nInf: {np.min(points, axis=0)}\n Sup: {np.max(points, axis=0)}')
     new_center = np.array([float(model[c[i]].as_fraction()) for i in range(len(c))])
     return StarSet(new_center, np.array(derived_basis) * float(model[u].as_fraction()), C, g)
 
@@ -785,12 +786,12 @@ def gen_starset(points: np.ndarray, old_star: StarSet) -> StarSet:
     # return post_cont_pca(old_star, derived_basis, points)
     # norm_star = post_cont_pca(old_star, derived_basis, norm_points)
     norm_star = post_cont_pca(old_star, derived_basis, centered_points)
-    # return StarSet(mean, norm_star.basis*std, norm_star.C, norm_star.g) # return the unnormalized starset 
-    return StarSet(mean, norm_star.basis, norm_star.C, norm_star.g) # return the unnormalized starset 
+    # return StarSet(mean, norm_star.basis, norm_star.C, norm_star.g) # return the unnormalized starset 
+    return StarSet(norm_star.center+mean, norm_star.basis, norm_star.C, norm_star.g) # return the unnormalized starset 
 
 ### doing post_computations using simulation then constructing star sets around each set of points afterwards -- not iterative
 ### modified N from 100 to 30 for helicopter scenario
-def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 30, mode_label: int = None, lane_map: LaneMap = None) -> List[StarSet]:
+def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 100, mode_label: int = None, lane_map: LaneMap = None) -> List[StarSet]:
     points = np.array(sample_star(old_star, N))
     post_points = []
 
@@ -960,275 +961,3 @@ def sim_star_vis(init_star: StarSet, sim: Callable, T: int = 7, ts: float = 0.05
         old_star = copy.deepcopy(new_star)
     plt.show()
     # return stars
-
-### need to refactor this file so all the starset operations are separate from the definitions
-
-def sample_initial_center(initial: StarSet, mini: np.ndarray, maxa: np.ndarray, max_mu: float = 0.25, Ns: int = 10) -> List[StarSet]: #
-    if max_mu<0:
-        raise Exception('Invalid mu. Please choose a value of mu greater than 0')
-    if len(mini)!=len(maxa):
-        raise Exception('Vertices of hyperrectangle have different dimensions.')
-
-    # print(initial)
-
-    C, g = initial.C, initial.g
-    X0 = []
-    for _ in range(Ns):
-        center = mini+np.random.rand(*mini.shape)*(maxa-mini)
-        basis = initial.basis*np.random.rand()*max_mu # think about if I also should allow this shape to be rotated
-        X0.append(StarSet(center, basis, C, g))
-    
-    return X0
-
-'''
-Returns a random interval between [0, T] that is length at most Nt and spacing ts
-'''
-def sample_times(T: float = 7, ts: float = 0.05, Nt: int = 100) -> torch.Tensor:
-    start: float
-    end: float
-    if T<=ts*Nt:
-        start = 0
-        end = T
-    else:
-        start = (torch.randint(0, int(T/ts)-Nt, (1,))).item()*ts
-        end = start+ts*Nt
-
-    return torch.arange(start, end, ts)
-
-'''
-TODO: 
-'''
-def train(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, agent_id: str = None, model_path: str = None, num_epochs: int = 30, num_samples: int = 100, 
-          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, gamma: float=0.99, lr: float=0.0001, Ns: int=1, Nt: int=100, 
-          big_initial_set: Tuple = None, initial_set_size: float = 0.25, sublin_loss: bool=False) -> None:
-    # Use SGD as the optimizer
-    print(f'Training with the following hyperparameters: \n Epochs {num_epochs}, Lambda {lamb}, Learning Rate {lr}, \n Number of Samples Per Initial Set {num_samples}, \n Number of Initial Sets {Ns}')
-
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=gamma)
-
-    C = torch.tensor(initial.C, dtype=torch.float)
-    g = torch.tensor(initial.g, dtype=torch.float)
-    # Training loop
-
-    '''
-    Using this instead of big_initial_set due to issues with systems with different modes
-    '''
-    mini, maxa = initial.overapprox_rectangle()
-    mini = np.array(mini)
-    maxa = np.array(maxa)
-    ''''''
-
-    for epoch in tqdm(range(num_epochs), desc="Training Progress"):
-        # Zero the parameter gradients
-        if big_initial_set is None or len(big_initial_set)!=2:
-            print(len(big_initial_set))
-            raise Exception("Big initial set is either None or has size not 2")
-        
-        X0 = [initial for _ in range(Ns)] # see comment just before loop        
-        # X0 = sample_initial_center(initial, mini, maxa, initial_set_size, Ns) # see comment just before loop
-        # X0 = sample_initial_center(initial, big_initial_set[0], big_initial_set[1], initial_set_size, Ns)
-
-        for i in range(Ns):
-            Xi: StarSet = X0[i]
-            Xi_v = torch.tensor(Xi.basis, dtype=torch.float)
-            Xi_xo = torch.tensor(Xi.center, dtype=torch.float)
-            samples = sample_star(Xi, num_samples) # Neureach has Nx_0 = 10 -- this should be specified by a hyperparameter instead
-
-            centers = [] 
-            # samples_times = sample_times(T, ts, Nt)
-            samples_times = torch.arange(0, T, ts) # this works better but result still not great
-            # print(f'Sample times range: {torch.min(samples_times)}, {torch.max(samples_times)}') # fix samples times so that they are actually multiples of ts
-
-            post_points = []
-            for point in samples:
-                post_points.append(sim(mode_label, point, torch.max(samples_times), ts, lane_map).tolist())
-            post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
-
-            # for i in range(len(samples_times)):
-            #     points = post_points[:, int(samples_times[i]//ts), 1:]
-            #     new_center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-            #     centers.append(torch.tensor(new_center, dtype=torch.float))
-
-            post_points = torch.tensor(post_points).float()
-
-            '''
-            For now, ignore the fact that this is being recomputed for each epoch and initial set
-            Ideally, this should either be computed once up front or slowly updated in each iteration
-            '''
-            ts_mean = post_points.mean(dim=0, keepdim=True) # mean over all samples (Ts x (n+1)) Ts := T/ts
-            centered_points = post_points-ts_mean # centered around 0 vector in all dimensions (N x Ts x (n+1))
-            mad: torch.Tensor = torch.abs(centered_points) # NxTsx(n+1) tensor -- variation in each dimension
-            mad = torch.max(mad, dim=0, keepdim=True).values # 1xTsx(n+1) tensor -- max variation in each dimension over all times
-            mad = mad.clamp(min=1e-6) # regularization, prevent divide by zero 
-            normed_points = centered_points/mad # points centered around 0 with radius <=1
-            
-
-            '''Centers after normalization'''
-            for i in range(len(samples_times)): # unsure of why I'm doing it like this
-                points = normed_points[:, int(samples_times[i]//ts), 1:]
-                new_center = torch.mean(points, dim=0) # probably won't be used, delete if unused in final product
-                centers.append(new_center)
-
-            for i in range(len(samples_times)):
-                optimizer.zero_grad()
-
-                flat_bases = model(torch.cat((Xi_xo, Xi_v.flatten(), samples_times[i].unsqueeze(0)), dim=-1))
-                n = initial.n
-                basis = flat_bases.view(-1, n, n)
-                
-                # Compute the loss
-                # points = post_points[:, int(samples_times[i]//ts), 1:]
-
-                points = normed_points[:, int(samples_times[i]//ts), 1:]
-                
-                r_basis = basis + 1e-6*torch.eye(n) # so that basis should always be inver
-                cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-                cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
-                
-                if sublin_loss:
-                    cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
-
-                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
-                
-                # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
-                # fit_loss = torch.relu(torch.sum(torch.norm(basis, dim=1))-torch.sum(torch.sqrt(eigenvalues[:n])))
-                # loss = lamb*cont_loss + fit_loss
-                
-                loss = lamb*cont_loss + size_loss
-                loss.backward()
-                optimizer.step()
-            
-        if (epoch+1)%10==0: 
-            print(f'\nEpoch [{epoch + 1}/{num_epochs}] \n_____________\n')
-            # print("Gradients of weights and loss", model.fc1.weight.grad, model.fc1.bias.grad)
-            for i in range(0, len(samples_times), max(len(samples_times)//20, 1)):
-                x0 = torch.tensor(initial.center, dtype=torch.float)
-                flat_bases = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), samples_times[i].unsqueeze(0)), dim=-1))
-                n = int(len(flat_bases) ** 0.5) 
-                basis: torch.Tensor = flat_bases.view(-1, n, n)
-                r_basis = basis + 1e-6*torch.eye(n) 
-                cont = lambda p, i: torch.linalg.vector_norm(torch.relu(C@torch.linalg.inv(r_basis)@(p-centers[i])-g)) ### pinv because no longer guaranteed to be non-singular
-                # points = post_points[:, int(samples_times[i]//ts), 1:]
-
-                points = normed_points[:, int(samples_times[i]//ts), 1:]
-
-                accuracy = torch.sum(torch.stack([cont(point, i) == 0 for point in points]))/num_samples
-                cont_loss = torch.sum(torch.stack([cont(point, i) for point in points]))/num_samples
-
-                if sublin_loss:
-                    cont_loss = torch.sqrt(cont_loss) # sublinear containment loss
-                
-                size_loss = torch.sqrt(torch.sum(torch.norm(basis, dim=1)))
-                # _, eigenvalues, _ = torch.pca_lowrank(post_points[:, int(samples_times[i]//ts), 1:]) 
-                # fit_loss = torch.relu(torch.sum(torch.norm(basis, dim=1))-torch.sum(torch.sqrt(eigenvalues[:n])))
-                # loss = lamb*cont_loss + fit_loss
-
-                loss = lamb*cont_loss + size_loss
-                print(f'containment loss: {cont_loss.item():.4f}, size loss: {size_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')            
-                # print(f'containment loss: {cont_loss.item():.4f}, fit size loss: {fit_loss.item():.4f}, time: {samples_times[i]:.1f}, accuracy: {accuracy:.3f}')
-
-        scheduler.step()
-
-    save_norms(ts_mean, mad, model_path, mode_label, agent_id) # save the mean and mad for later 
-
-'''Consider if hidden size should also be controllable by hyperparams'''
-def get_model(initial: StarSet, sim: Callable, mode_label: int = None, T: float = 7, ts: float=0.1, lane_map: LaneMap = None, agent_id: str = None, hidden_size: int = 64, model_path: str = 'model', model_hparams: dict = None) -> PostNN:
-    input_size = initial.n+initial.basis.flatten().size + 1 # x0, V, t
-    output_size = initial.basis.flatten().size
-    model = create_model(input_size, hidden_size, output_size)
-    model_he_init(model)
-    os.makedirs(f"./verse/stars/models/{model_path}", exist_ok=True) # this directory too should be a scenario config thing
-    train(initial, sim, model, mode_label, agent_id, model_path, T=T, ts=ts, lane_map=lane_map, **model_hparams) # initial, sim, model, mode_label, T, ts, and lane_map are fixed, rest should be handled by either defaults or hyperparams
-    model.eval()
-    torch.save(model.state_dict(), f"./verse/stars/models/{model_path}/{agent_id}_{mode_label}.pth")
-    return model
-
-# there is no reason for num_samples to be this high, it's literally just being used to compute the center of the star set and accuracy
-def gen_reachtube(initial: StarSet, sim: Callable, model: PostNN, mode_label: int = None, num_samples: int=100, T: float = 7, ts: float = 0.05, lane_map: LaneMap=None, verbose: bool = False, ts_mean: torch.Tensor = None, mad: torch.Tensor = None) -> List[StarSet]:
-    # if verbose:
-    #     print(f'In mode {mode_label}')
-        # initial.print()
-    
-    # initial.print()
-    S = sample_star(initial, num_samples)
-    initial.print()
-    post_points = []
-    for point in S:
-        post_points.append(sim(mode_label, point, T, ts, lane_map).tolist())
-    post_points = np.array(post_points) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
-    
-    test_times = torch.arange(0, T, ts)
-    # pos = positional_encoding(test_times, initial.dimension()*2)
-    # test = torch.reshape(test_times, (len(test_times), 1))
-    C, g = initial.C, initial.g
-    x0 = torch.tensor(initial.center, dtype=torch.float)
-
-    stars = []
-    accuracy = []
-
-    ts_mean = ts_mean.detach().numpy() # NxTsx(n+1) array
-    mad = mad.detach().numpy()[0] # Tsxn+1 array
-    # normed_points = (post_points[:,:-1]-ts_mean)/mad
-    for i in range(len(test_times)):
-        # points = normed_points[:, i, 1:]
-        mad_t = mad[i][1:] # n array
-        mad_dt = np.diag(mad_t) # diagonalize the array, keep arrays separate for printing
-
-        points = post_points[:, i, 1:]
-
-        center = np.mean(points, axis=0) # probably won't be used, delete if unused in final product
-        flat_bases: torch.Tensor = model(torch.cat((x0, torch.tensor(initial.basis, dtype=torch.float).flatten(), test_times[i].unsqueeze(0)), dim=-1))
-        n = int(len(flat_bases) ** 0.5) 
-        basis = flat_bases.view(-1, n, n)[0].detach().numpy()
-
-        basis = mad_dt@basis # should scale all rows of basis
-
-        new_star = StarSet(center, basis, C, g)
-        stars.append(new_star)    
-
-        if verbose:
-            accuracy.append(compute_accuracy(new_star, points, basis))
-            # if (i+1)%(10) == 0:
-            #     print(f'Accuracy {accuracy[-1]} at t={test_times[i]}')     
-        # plt.scatter(np.ones(len(points[:,0]))*i*ts, points[:,5]) # just for plotting
-        # plt.scatter(points[:,0], points[:,1]) # just for plotting
-
-    accuracy = np.array(accuracy)
-
-    if verbose:
-        print(f'Average accuracy: {np.mean(accuracy):.2f}., Worst Accuracy: {np.min(accuracy):.2f}, Best Accuracy: {np.max(accuracy):.2f}, Accuracy Variance: {np.var(accuracy):.2f}') # this will get printed out for each node -- to not have this behavior, just store it in some global
-    # plot_stars_points_nonit_nd(stars, post_points, 0, 2)
-    return stars
-
-'''
-Likely broken, don't know cause
-'''
-def compute_accuracy(initial: StarSet, points: np.ndarray, new_basis: np.ndarray):
-    n = initial.n
-    new_center = np.mean(points, axis=0)
-    r_basis = 1e-6*np.eye(n)+new_basis 
-    cont = lambda p: np.linalg.norm(np.maximum(initial.C@np.linalg.inv(r_basis)@(p-new_center)-initial.g, 0))
-    contain = np.sum(np.stack([cont(point) == 0 for point in points]))
-    # for point in points:
-    #     print(cont(point))
-    return np.round(contain/len(points), 3)
-
-def write_train_details(model_path: str, num_epochs: int = 30, num_samples: int = 100, 
-          T: float = 7, ts: float=0.1, lane_map: LaneMap=None, lamb: float = 7, gamma: float=0.99, 
-          lr: float=0.0001, Ns: int=1, Nt: int=100, 
-          big_initial_set: Tuple = None, initial_set_size: float = 0.25, sublin_loss: bool=False) -> None:
-    
-    with open(f'./verse/stars/models/{model_path}/model_details.txt', 'w') as file:
-        for param, val in locals().items():
-            file.write(f'Parameter name: {param}: {val}\n')
-
-# Save the mean and MAD to right file locations -- assuming 
-def save_norms(mean: torch.Tensor, mad: torch.Tensor, model_path: str, mode_label: str, agent_id: str) -> None:
-    factors = {"mean": mean, "mad": mad}
-    torch.save(factors, f'./verse/stars/models/{model_path}/{agent_id}_{mode_label}_norm_factors.pt')
-
-# Load the normalization factors from right file locations
-def load_norms(model_path: str, mode_label: str, agent_id: str) -> Tuple[torch.Tensor]: # not sure if return type is correct
-    factors = torch.load(f'./verse/stars/models/{model_path}/{agent_id}_{mode_label}_norm_factors.pt')
-    return factors["mean"], factors["mad"]

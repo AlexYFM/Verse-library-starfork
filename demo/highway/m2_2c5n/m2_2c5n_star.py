@@ -10,7 +10,8 @@ from verse.sensor.base_sensor_stars import *
 from enum import Enum, auto
 import sys
 import plotly.graph_objects as go
-
+import time 
+from verse.utils.star_diams import *
 
 class AgentMode(Enum):
     Normal = auto()
@@ -142,16 +143,22 @@ if __name__ == "__main__":
     #         (AgentMode.Normal, TrackMode.T3),
     #     ],
     # )
-    time_step = 0.05
+    time_step = 0.2
 
     scenario.config.overwrite = False
-    trace = scenario.verify(80, 0.05)
-
+    start = time.time()
+    trace = scenario.verify(80, 0.2)
+    dur = time.time()-start 
+    print(f'Runtime: {dur}')
     '''
     NOTE:
     still need to finish verification, on like node 9 or something
     '''
-    plot_reachtube_stars(trace,tmp_map, filter=2)
+    # plot_reachtube_stars(trace,tmp_map, filter=1)
+    diams = time_step_diameter(trace, 80, 0.2)
+    print(diams[-1])
+    print(len(diams))
+    print(sum(diams))
     # if bench.config.compare:
     #     traces1, traces2 = bench.compare_run(80, time_step)
     #     exit(0)

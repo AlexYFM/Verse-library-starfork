@@ -12,7 +12,9 @@ from verse.sensor.base_sensor_stars import *
 import sys
 import plotly.graph_objects as go
 
-
+import time
+from verse.plotter.plotterStar import *
+from verse.utils.star_diams import *
 class AgentMode(Enum):
     Normal = auto()
     SwitchLeft = auto()
@@ -40,12 +42,7 @@ if __name__ == "__main__":
     scenario = Scenario(ScenarioConfig(parallel=False))
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
 
-    scenario.config.model_path = 'highway_diff_center'
-
-    scenario.config.model_hparams = {
-        "big_initial_set": (np.array([0,-0.5,0,0]), np.array([15,0.5,0,0])), # for now, make this the initial set instead to make training better 
-        "initial_set_size": 1,
-    }
+    scenario.config.model_path = 'highway_diff_center_bench_large'
 
     center = np.array([0.005, 0, 0, 1])
     basis = np.eye(4)*np.diag([0.005, 0.5, 0, 0])
@@ -88,6 +85,11 @@ if __name__ == "__main__":
     #                         )
     # traces.dump(os.path.join(script_dir, "output6_neureach.json")
     time_step = 0.05
-    trace = scenario.verify(40,0.05)
+    start = time.time()
+    trace = scenario.verify(40,0.1) # increasing ts to 0.1 to increase learning speed, do the same for dryvr
+    end = time.time()
+    print(f'Time: {end-start}')
+    diams = time_step_diameter(trace, 40, 0.1)
+    print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
     # plot_stars_time(trace)
-    plot_reachtube_stars(trace,tmp_map, filter=10)
+    plot_reachtube_stars(trace,tmp_map, filter=1)

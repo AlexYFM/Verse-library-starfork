@@ -6,6 +6,10 @@ from verse.sensor.example_sensor.craft_sensor import CraftSensor
 import plotly.graph_objects as go
 from enum import Enum, auto
 
+import time
+import plotly.graph_objects as go
+from verse.plotter.plotterStar import *
+from verse.utils.star_diams import *
 
 class CraftMode(Enum):
     ProxA = auto()
@@ -29,7 +33,16 @@ if __name__ == "__main__":
             tuple([CraftMode.ProxA]),
         ],
     )
+
+    start = time.time()
     traces = scenario.verify(200, 1)
+    end = time.time()
+
+    print(f'Time: {end-start}')
+    diams = time_step_diameter_rect(traces, 200, 1)
+    print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
+
+
     fig = go.Figure()
     fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
     # fig = reachtube_tree(traces, None, fig, 0, 3, [0, 3], "lines", "trace")
