@@ -60,7 +60,7 @@ def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
             for i in range(0, len(trace)):
                 #trace[i][1].show()
                 #print(trace[i][1])
-                x, y = np.array(trace[i][1].get_verts())
+                x, y = np.array(trace[i][1].get_verts(x_dim, y_dim))
                 #print(verts)
                 #x=[verts[:,0]]
                 #print(x)
