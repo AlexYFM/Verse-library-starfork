@@ -9,7 +9,7 @@ from plotly.graph_objs.scatter import Marker
 from verse.analysis.analysis_tree import AnalysisTree, AnalysisTreeNode
 from verse.map.lane_map import LaneMap
 
-colors = ['orange', 'blue', 'green', 'red', 'yellow', 'purple', 'teal']
+colors = ['blue', 'green', 'red', 'yellow', 'purple', 'teal','orange']
 
 def plot_reachtube_stars(
     root: Union[AnalysisTree, AnalysisTreeNode],
@@ -60,13 +60,15 @@ def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
             for i in range(0, len(trace)):
                 #trace[i][1].show()
                 #print(trace[i][1])
-                x, y = np.array(trace[i][1].get_verts())
+                x, y = np.array(trace[i][1].get_verts(x_dim, y_dim))
                 #print(verts)
                 #x=[verts[:,0]]
                 #print(x)
                 #y=[verts[:,1]]
                 #print(y)
                 plt.plot(x, y, lw = 1, color = color)
+                # x, y = np.array(trace[i][1].get_verts_dim())
+                # plt.plot(x, y, 'o', color = 'red')
                 #plt.show()
             queue += node.child
         else:

@@ -138,7 +138,7 @@ if __name__ == "__main__":
     helicopter = HelicopterAgent('Helicopter', file_name=input_code_name)
 
     # toggle b/t postcont algs using pca parameter
-    scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False, pca=True))
+    scenario = Scenario(ScenarioConfig(init_seg_length=1, parallel=False))
 
     # scenario.add_agent(helicopter) ### need to add breakpoint around here to check decision_logic of agents
     # init_h = [[10 for _ in range(28)],[11 for _ in range(28)]]
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     scenario.set_sensor(BaseStarSensor())
 
-    scenario.verify(20, 0.01) # takes several minutes to find a single star set -- guessing fitting taking too long given the number of dimensions (28)
+    scenario.verify(20, 20) # takes several minutes to find a single star set -- guessing fitting taking too long given the number of dimensions (28)
     # orders of magnitude worse than overapprox with rectangles and do dryvr
     
     # is false, should be false

@@ -1,6 +1,6 @@
 from verse.agents.example_agent import CarAgent, NPCAgent
 from verse.map.example_map.map_tacas import M3
-from verse.scenario.scenario import Benchmark
+from verse.scenario.scenario import Benchmark, ReachabilityMethod
 
 # from noisy_sensor import NoisyVehicleSensor
 from verse.plotter.plotter2D import *
@@ -11,9 +11,11 @@ import plotly.graph_objects as go
 
 import pyvista as pv
 from verse.plotter.plotter3D import *
+
+from verse.stars.starset import *
+from verse.sensor.base_sensor_stars import *
+import time 
 from verse.utils.star_diams import *
-
-
 class LaneObjectMode(Enum):
     Vehicle = auto()
     Ped = auto()  # Pedestrians
@@ -57,54 +59,71 @@ if __name__ == "__main__":
     script_dir = os.path.realpath(os.path.dirname(__file__))
     input_code_name = os.path.join(script_dir, "example_controller5.py")
 
-    bench = Benchmark(sys.argv, init_seg_length=5)
-    bench.agent_type = "C"
-    bench.noisy_s = "No"
+    scenario = Scenario(ScenarioConfig(parallel=False))
+    scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     car = CarAgent("car1", file_name=input_code_name)
-    bench.scenario.add_agent(car)
     car = NPCAgent("car2")
-    bench.scenario.add_agent(car)
     car = NPCAgent("car3")
-    bench.scenario.add_agent(car)
     tmp_map = M3()
-    bench.scenario.set_map(tmp_map)
-    bench.scenario.set_init(
-        [
-            [[5, -0.5, 0, 1.0], [5.5, 0.5, 0, 1.0]],
-            [[20, -0.2, 0, 0.5], [20, 0.2, 0, 0.5]],
-            [[4 - 2.5, 2.8, 0, 1.0], [4.5 - 2.5, 3.2, 0, 1.0]],
-        ],
-        [
-            (AgentMode.Normal, TrackMode.T1),
-            (AgentMode.Normal, TrackMode.T1),
-            (AgentMode.Normal, TrackMode.T0),
-        ],
+    scenario.set_map(tmp_map)
+    time_step = 0.1
+    C, g = new_pred(4)
+    
+    car1 = CarAgent("car1", file_name=input_code_name)
+    verts = np.array([[5, -0.5, 0, 1.0], [5.5, 0.5, 0, 1.0]])
+    center = (verts[0]+verts[1])/2
+    basis = np.diag(center-verts[0])
+    car1.set_initial(
+        StarSet(center, basis, C, g),
+        (
+                AgentMode.Normal,
+                TrackMode.T1,
+            )
     )
+
+    car2 = NPCAgent("car2")
+    verts = np.array([[20, -0.2, 0, 0.5], [20, 0.2, 0, 0.5]])
+    center = (verts[0]+verts[1])/2
+    basis = np.diag(center-verts[0])
+    car2.set_initial(
+        StarSet(center, basis, C, g),
+                (
+                AgentMode.Normal,
+                TrackMode.T1,
+            )
+    )
+
+    car3 = NPCAgent("car3")
+    verts = np.array([[4 - 2.5, 2.8, 0, 1.0], [4.5 - 2.5, 3.2, 0, 1.0]])
+    center = (verts[0]+verts[1])/2
+    basis = np.diag(center-verts[0])
+    car3.set_initial(
+        StarSet(center, basis, C, g),
+                (
+                AgentMode.Normal,
+                TrackMode.T0,
+            )
+    )
+
+    scenario.add_agent(car1)
+    scenario.add_agent(car2)
+    scenario.add_agent(car3)
+
     time_step = 0.2
-    if bench.config.compare:
-        traces1, traces2 = bench.compare_run(40, time_step, params={"bloating_method": "GLOBAL"})
-        exit(0)
-    traces = bench.run(40, time_step, params={"bloating_method": "GLOBAL"})
+    
+    scenario.set_sensor(BaseStarSensor())
 
-    if bench.config.dump:
-        traces.dump(os.path.join(script_dir, "output2_curve.json"))
-    if bench.config.plot:
-        fig = go.Figure()
-        fig = reachtube_tree(traces, tmp_map, fig, 1, 2, [1, 2], "lines", "trace")
-        fig.show()
-    bench.report()
+    start = time.time()
+    trace = scenario.verify(40, time_step)
+    runtime = time.time()-start
+    print(f'Runtime: {runtime}')
 
-    diams = time_step_diameter_rect(traces, 40, 0.2)
+    diams = time_step_diameter(trace, 40, 0.2)
 
     # plot_reachtube_stars(trace, tmp_map, filter=1)
     print(diams[-1])
     print(len(diams))
     print(sum(diams))
-    # fig = go.Figure()
-    # fig = reachtube_anime(traces, tmp_map, fig, 1,
-    #                       2, 'lines', 'trace', combine_rect=1)
-    # fig.show()
-
     # fig = pv.Plotter()
     # fig = plot3dReachtube(traces,'car1',1,2,0,'b',fig)
     # fig = plot3dReachtube(traces,'car2',1,2,0,'r',fig)

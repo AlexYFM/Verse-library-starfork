@@ -8,6 +8,7 @@ from enum import Enum, auto
 import sys
 import plotly.graph_objects as go
 
+from verse.utils.star_diams import *
 
 class LaneObjectMode(Enum):
     Vehicle = auto()
@@ -74,11 +75,11 @@ if __name__ == "__main__":
             ),
         ],
     )
-    time_step = 0.1
+    time_step = 0.2
     if bench.config.compare:
         traces1, traces2 = bench.compare_run(60, time_step)
         exit(0)
-    traces = bench.run(60, time_step)  # traces.dump('./output1.json')
+    traces = bench.run(50, time_step)  # traces.dump('./output1.json')
     if bench.config.dump:
         traces.dump(os.path.join(script_dir, "output5.json"))
     # traces = AnalysisTree.load('./output5.json')
@@ -87,3 +88,7 @@ if __name__ == "__main__":
         fig = reachtube_tree(traces, tmp_map, fig, 1, 2, [1, 2], "lines", "trace")
         fig.show()
     bench.report()
+    diams = time_step_diameter_rect(traces, 50, 0.2)
+    print(diams[-1])
+    print(len(diams))
+    print(sum(diams))
