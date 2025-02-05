@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from scipy.integrate import ode
-from scipy.spatial import HalfspaceIntersection
+from scipy.spatial import HalfspaceIntersection, ConvexHull
 import pandas as pd
 from tqdm import tqdm
 import os
@@ -660,10 +660,13 @@ class StarSet:
             return verts[sorted_indices]
         
         verts = self.get_verts_opt()
-        verts = order_verts_clockwise(verts)
-        v_dim1 = list(verts[:,dim1])
-        v_dim2 = list(verts[:,dim2])
-
+        verts_2D = verts[:,[dim1, dim2]]
+        if len(verts_2D)>self.n:
+            verts_2D = verts_2D[ConvexHull(verts_2D).vertices]
+        verts_2D = order_verts_clockwise(verts_2D)
+        v_dim1 = list(verts_2D[:,0])
+        v_dim2 = list(verts_2D[:,1])
+        
         v_dim1.append(v_dim1[0])
         v_dim2.append(v_dim2[0])
         return (v_dim1, v_dim2)

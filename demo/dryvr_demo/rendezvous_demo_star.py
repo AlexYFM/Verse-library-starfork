@@ -77,7 +77,7 @@ if __name__ == "__main__":
     print(f'Time: {end-start}')
     diams = time_step_diameter(traces, 200, 1)
     print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
-    plot_reachtube_stars(traces, 0,2, filter=1)
+    plot_reachtube_stars(traces, x_dim=0, y_dim=2, filter=1)
     # plot_stars_time(traces, 2)
     # plot_stars_time(traces, 5, scenario_agent=car)
     # fig = go.Figure()
