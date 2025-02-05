@@ -438,55 +438,55 @@ class StarSet:
         return (self.center[x_dim], self.center[y_dim])
 
     # stanley bak code
-    def get_verts(stateset, dim1=None, dim2=None):
-        """get the vertices of the stateset"""
-        #TODO: generalize for n dimensional
-        verts = []
-        x_pts = []
-        y_pts = []
-        extra_dims_ct = len(stateset.center) - 2
-        zeros = []
-        for i in range(0, extra_dims_ct):
-            zeros.append([0])
-        # sample the angles from 0 to 2pi, 100 samples
-        # for angle in np.linspace(0, 2*np.pi, 100):
-        for angle in np.linspace(0, 2*np.pi, 100):
-            x_component = np.cos(angle)
-            y_component = np.sin(angle)
-            #TODO: needs to work for 3d and any dim of non-graphed state
-            if dim1 is None or dim2 is None:
-                direction = [[x_component], [y_component]]
-                direction.extend(zeros)
-            else:
-                direction = [[0] for _ in range(stateset.dimension())]
-                direction[dim1] = [x_component]
-                direction[dim2] = [y_component] 
-            direction = np.array(direction)
-            #for i in range(0, extra_dims_ct):
-            #    direction.append([0])
-            #direction.extend(zeros)
+    # def get_verts(stateset, dim1=None, dim2=None):
+    #     """get the vertices of the stateset"""
+    #     #TODO: generalize for n dimensional
+    #     verts = []
+    #     x_pts = []
+    #     y_pts = []
+    #     extra_dims_ct = len(stateset.center) - 2
+    #     zeros = []
+    #     for i in range(0, extra_dims_ct):
+    #         zeros.append([0])
+    #     # sample the angles from 0 to 2pi, 100 samples
+    #     # for angle in np.linspace(0, 2*np.pi, 100):
+    #     for angle in np.linspace(0, 2*np.pi, 100):
+    #         x_component = np.cos(angle)
+    #         y_component = np.sin(angle)
+    #         #TODO: needs to work for 3d and any dim of non-graphed state
+    #         if dim1 is None or dim2 is None:
+    #             direction = [[x_component], [y_component]]
+    #             direction.extend(zeros)
+    #         else:
+    #             direction = [[0] for _ in range(stateset.dimension())]
+    #             direction[dim1] = [x_component]
+    #             direction[dim2] = [y_component] 
+    #         direction = np.array(direction)
+    #         #for i in range(0, extra_dims_ct):
+    #         #    direction.append([0])
+    #         #direction.extend(zeros)
 
-            pt = stateset.maximize(direction)
+    #         pt = stateset.maximize(direction)
 
-            # verts.append(pt)
-            verts.append([pt[0][dim1], pt[0][dim2]])
-            #print(pt)
-            if dim1 is None or dim2 is None:
-                x_pts.append(pt[0][0])
-                #print(pt[0][0])
-                y_pts.append(pt[0][1])
-            else:
-                x_pts.append(pt[0][dim1])
-                y_pts.append(pt[0][dim2])
-            #print(pt[1][0])
-        verts = np.array(verts)
-        ### these three lines whether to use convex hull or not
-        # ch = ConvexHull(verts)
-        # verts = np.vstack((verts[ch.vertices], verts[ch.vertices[0]]))
-        # return (verts[:, 0], verts[:, 1])
-        x_pts.append(x_pts[0])
-        y_pts.append(y_pts[0])
-        return (x_pts, y_pts)
+    #         # verts.append(pt)
+    #         verts.append([pt[0][dim1], pt[0][dim2]])
+    #         #print(pt)
+    #         if dim1 is None or dim2 is None:
+    #             x_pts.append(pt[0][0])
+    #             #print(pt[0][0])
+    #             y_pts.append(pt[0][1])
+    #         else:
+    #             x_pts.append(pt[0][dim1])
+    #             y_pts.append(pt[0][dim2])
+    #         #print(pt[1][0])
+    #     verts = np.array(verts)
+    #     ### these three lines whether to use convex hull or not
+    #     # ch = ConvexHull(verts)
+    #     # verts = np.vstack((verts[ch.vertices], verts[ch.vertices[0]]))
+    #     # return (verts[:, 0], verts[:, 1])
+    #     x_pts.append(x_pts[0])
+    #     y_pts.append(y_pts[0])
+    #     return (x_pts, y_pts)
 
 #stanley bak code
     def maximize(self, opt_direction):
@@ -647,14 +647,23 @@ class StarSet:
     
     def get_verts_opt(self) -> np.ndarray:
         pred_verts = self.pred_verts()
-        verts = (self.basis @ pred_verts.T).T + self.center # the first operation multiplies each basis by V, then add the center to each vertex
+        verts = (self.basis.T @ pred_verts.T).T + self.center # the first operation multiplies each basis by V, then add the center to each vertex
         return np.unique(verts, axis=0)
         # return verts
 
-    def get_verts_dim(self, dim1: int = 0, dim2: int = 1) -> Tuple[List, List]:
+    def get_verts(self, dim1: int = 0, dim2: int = 1) -> Tuple[List, List]:
+        def order_verts_clockwise(verts: np.ndarray) -> np.ndarray:
+            # points = np.array(verts)
+            centroid = np.mean(verts, axis=0)
+            angles = np.arctan2(verts[:, 1] - centroid[1], verts[:, 0] - centroid[0])
+            sorted_indices = np.argsort(-angles)
+            return verts[sorted_indices]
+        
         verts = self.get_verts_opt()
+        verts = order_verts_clockwise(verts)
         v_dim1 = list(verts[:,dim1])
         v_dim2 = list(verts[:,dim2])
+
         v_dim1.append(v_dim1[0])
         v_dim2.append(v_dim2[0])
         return (v_dim1, v_dim2)

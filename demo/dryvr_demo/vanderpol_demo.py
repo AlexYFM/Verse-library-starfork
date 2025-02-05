@@ -85,19 +85,19 @@ if __name__ == "__main__":
     car1 = traces.nodes[0].trace['car1']
     car1 = [star[1] for star in car1]
     car0 = car1[0]
-    # print(car0.get_verts())
+    # v = np.array(car0.get_verts()).T
     # print(car0.get_verts_dim())
 
     # for star in car1:
     #     print(star.center, star.basis, star.C, star.g, '\n --------')
     # plot_stars(car1, 0, 1)
-    S = sample_star(StarSet(center, basis, C, g), N=30)
-    St = []
-    for p in S: 
-        St.append(car.TC_simulate((AgentMode.Default), p, 7, 0.1).tolist())
-    St = np.array(St) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
-    for t in range(len(St[0])):
-        plt.scatter(St[:,t,1], St[:,t,2], color='black') 
+    # S = sample_star(StarSet(center, basis, C, g), N=30)
+    # St = []
+    # for p in S: 
+    #     St.append(car.TC_simulate((AgentMode.Default), p, 7, 0.1).tolist())
+    # St = np.array(St) ### this has shape N x (T/ts) x (n+1), S_t is equivalent to p_p[:, t, 1:]
+    # for t in range(len(St[0])):
+    #     plt.scatter(St[:,t,1], St[:,t,2], color='black') 
     plot_reachtube_stars(traces, filter=1)
 
     # plot_stars_time(traces, 0, sim=vanderpol_agent.TC_simulate, scenario_agent=car)

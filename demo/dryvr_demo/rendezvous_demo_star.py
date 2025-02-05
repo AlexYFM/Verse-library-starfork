@@ -60,10 +60,6 @@ if __name__ == "__main__":
         initial_mode=tuple([CraftMode.ProxA])
     )
     initial = StarSet(center, basis, C, g)
-    print(f'Center: {initial.pred_cheby_center()}')
-    print(f'Verts: {initial.pred_verts()}')
-    print(f'Real verts: {initial.get_verts_opt()}')
-    exit()
     scenario.add_agent(car)
     # scenario.set_init(
     #     [
@@ -81,8 +77,8 @@ if __name__ == "__main__":
     print(f'Time: {end-start}')
     diams = time_step_diameter(traces, 200, 1)
     print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
-    # plot_reachtube_stars(traces, filter=1)
-    plot_stars_time(traces, 2)
+    plot_reachtube_stars(traces, filter=1)
+    # plot_stars_time(traces, 2)
     # plot_stars_time(traces, 5, scenario_agent=car)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")
