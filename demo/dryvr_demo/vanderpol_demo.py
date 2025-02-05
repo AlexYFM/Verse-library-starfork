@@ -10,7 +10,7 @@ from enum import Enum, auto
 from verse.sensor.base_sensor_stars import *
 import time
 from verse.utils.star_diams import *
-
+from scipy.spatial import HalfspaceIntersection
 
 class AgentMode(Enum):
     Default = auto()
@@ -71,17 +71,23 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     # scenario.config.overwrite = True
 
-    start = time.time()
+    initial = StarSet(center, basis, C, g)
+
+
+    # start = time.time()
     traces = scenario.verify(7, 0.1)
-    end = time.time()
-    print(f'Run time: {end-start}')
-    diams = time_step_diameter(traces, 7, 0.1)
-    print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
-    print(sum(diams), '\n', len(diams))
+    # end = time.time()
+    # print(f'Run time: {end-start}')
+    # diams = time_step_diameter(traces, 7, 0.1)
+    # print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
+    # print(sum(diams), '\n', len(diams))
     # exit()
     car1 = traces.nodes[0].trace['car1']
     car1 = [star[1] for star in car1]
-    
+    car0 = car1[0]
+    # print(car0.get_verts())
+    # print(car0.get_verts_dim())
+
     # for star in car1:
     #     print(star.center, star.basis, star.C, star.g, '\n --------')
     # plot_stars(car1, 0, 1)
@@ -94,8 +100,7 @@ if __name__ == "__main__":
         plt.scatter(St[:,t,1], St[:,t,2], color='black') 
     plot_reachtube_stars(traces, filter=1)
 
-    exit()
-    plot_stars_time(traces, 0, sim=vanderpol_agent.TC_simulate, scenario_agent=car)
+    # plot_stars_time(traces, 0, sim=vanderpol_agent.TC_simulate, scenario_agent=car)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 0, 1, [0, 1], "lines", "trace")
     # fig.show()

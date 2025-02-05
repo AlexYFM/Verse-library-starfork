@@ -67,6 +67,8 @@ def reachtube_tree_single(root,agent_id,x_dim,y_dim, color):
                 #y=[verts[:,1]]
                 #print(y)
                 plt.plot(x, y, lw = 1, color = color)
+                # x, y = np.array(trace[i][1].get_verts_dim())
+                # plt.plot(x, y, 'o', color = 'red')
                 #plt.show()
             queue += node.child
         else:

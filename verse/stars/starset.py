@@ -437,7 +437,7 @@ class StarSet:
     def get_center_pt(self, x_dim, y_dim):
         return (self.center[x_dim], self.center[y_dim])
 
-    #stanley bak code
+    # stanley bak code
     def get_verts(stateset, dim1=None, dim2=None):
         """get the vertices of the stateset"""
         #TODO: generalize for n dimensional
@@ -630,6 +630,35 @@ class StarSet:
             np.ascontiguousarray(self.basis).tobytes()+
             np.ascontiguousarray(self.center).tobytes()
         ).hexdigest(), 16)
+    
+    '''Gets the chebyshev center from star set's predicate'''
+    def pred_cheby_center(self) -> np.ndarray: 
+        c = np.zeros(self.n+1) 
+        c[-1] = -1
+        C_slack = np.hstack([self.C, np.ones((self.C.shape[0], 1))])
+        res = linprog(c, A_ub=C_slack, b_ub=self.g, bounds=[(None, None)])
+        return res.x[:-1]
+    
+    def pred_verts(self) -> np.ndarray:
+        halfspaces = np.hstack([self.C, -np.reshape(self.g, (-1,1))]) # the second part looks weird but just reshaping g
+        pcc = self.pred_cheby_center()
+        hs = HalfspaceIntersection(halfspaces, pcc)
+        return hs.intersections 
+    
+    def get_verts_opt(self) -> np.ndarray:
+        pred_verts = self.pred_verts()
+        verts = (self.basis @ pred_verts.T).T + self.center # the first operation multiplies each basis by V, then add the center to each vertex
+        return np.unique(verts, axis=0)
+        # return verts
+
+    def get_verts_dim(self, dim1: int = 0, dim2: int = 1) -> Tuple[List, List]:
+        verts = self.get_verts_opt()
+        v_dim1 = list(verts[:,dim1])
+        v_dim2 = list(verts[:,dim2])
+        v_dim1.append(v_dim1[0])
+        v_dim2.append(v_dim2[0])
+        return (v_dim1, v_dim2)
+
 
 class HalfSpace:
     '''

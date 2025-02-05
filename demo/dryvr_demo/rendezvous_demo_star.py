@@ -59,7 +59,11 @@ if __name__ == "__main__":
         initial_state=StarSet(center, basis, C, g),
         initial_mode=tuple([CraftMode.ProxA])
     )
-
+    initial = StarSet(center, basis, C, g)
+    print(f'Center: {initial.pred_cheby_center()}')
+    print(f'Verts: {initial.pred_verts()}')
+    print(f'Real verts: {initial.get_verts_opt()}')
+    exit()
     scenario.add_agent(car)
     # scenario.set_init(
     #     [
