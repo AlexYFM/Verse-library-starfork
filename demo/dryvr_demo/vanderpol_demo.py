@@ -73,7 +73,6 @@ if __name__ == "__main__":
 
     initial = StarSet(center, basis, C, g)
 
-
     start = time.time()
     traces = scenario.verify(7, 0.1)
     end = time.time()

@@ -30,7 +30,7 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # modify mode list input
-    scenario.config.model_path = 'spacecraft_svd_bench_large'
+    scenario.config.model_path = 'spacecraft_svd_bench_large_new'
 
     scenario.config.model_hparams = {
         "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
@@ -77,8 +77,8 @@ if __name__ == "__main__":
     print(f'Time: {end-start}')
     diams = time_step_diameter(traces, 200, 1)
     print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
-    plot_reachtube_stars(traces, x_dim=0, y_dim=2, filter=1)
-    # plot_stars_time(traces, 2)
+    plot_reachtube_stars(traces, x_dim=0, y_dim=1, filter=1)
+    # plot_stars_time(traces, 4)
     # plot_stars_time(traces, 5, scenario_agent=car)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")

@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import polytope as pc
 from z3 import *
 from verse.plotter.plotterStar import *
-import polytope as pc
 from scipy.spatial import ConvexHull
 from sklearn.decomposition import PCA
 from verse.utils.utils import sample_rect
@@ -26,9 +25,6 @@ import pandas as pd
 from tqdm import tqdm
 import os
 import hashlib
-import gurobipy as gp
-from gurobipy import GRB
-
 
 class StarSet:
     """
@@ -235,7 +231,11 @@ class StarSet:
             star_tube = []
             for i in range(len(reach)):
                 star_tube.append([i*time_step, reach[i]])
-
+            
+            # for r in reach:
+            #     for b in r.basis:
+            #         plt.quiver(*((r.center)[[0,4]]), *b[[0, 4]], angles='xy', scale_units='xy', scale=1, color='purple', linewidth=0.5)
+            
             return star_tube
 
 
@@ -591,31 +591,46 @@ class StarSet:
         if m==1:
             return stars[0]
 
-        new_rect = []
-        n = stars[0].n
-        for i in range(n):
-            max = None
-            min = None
-            for star in stars:
-                this_min, this_max = star.get_max_min(i)
-                if min == None or this_min < min:
-                    min = this_min
-                if max == None or this_max > max:
-                    max = this_max
-            new_rect.append([min, max])
+        # new_rect = []
+        # n = stars[0].n
+        # for i in range(n):
+        #     max = None
+        #     min = None
+        #     for star in stars:
+        #         this_min, this_max = star.get_max_min(i)
+        #         if min == None or this_min < min:
+        #             min = this_min
+        #         if max == None or this_max > max:
+        #             max = this_max
+        #     new_rect.append([min, max])
 
-        new_rect = np.array(new_rect).T
-        basis = []
-        for i in range(n):
-            diff = new_rect[1]-new_rect[0] #max - min
-            center = (new_rect[1]+new_rect[0])/2
-            basis = np.eye(n)*np.diag(diff/2)
-            C, g = new_pred(n) 
+        # new_rect = np.array(new_rect).T
+        # basis = []
+        # for i in range(n):
+        #     diff = new_rect[1]-new_rect[0] #max - min
+        #     center = (new_rect[1]+new_rect[0])/2
+        #     basis = np.eye(n)*np.diag(diff/2)
+        #     C, g = new_pred(n) 
 
-        # for star in stars:
-        #     star.print()
-        # StarSet(center, basis, C, g).print()
-        return StarSet(center, basis, C, g)
+        # return StarSet(center, basis, C, g)
+
+        all_verts = []
+        for star in stars:
+            all_verts.append(star.get_verts_opt()) 
+        all_verts = np.vstack(all_verts)
+        all_verts = all_verts[ConvexHull(all_verts, qhull_options='QJ').vertices]
+        plt.scatter(all_verts[:,0], all_verts[:,4])
+        ns = gen_starset(all_verts, stars[0]) # doesn't matter which star set we choose, only the predicate is being looked at and all star sets in a sequence should have the same predicate
+        colors = ['r','b']
+        i = 0
+        for b in ns.basis:
+            i = (i+1)%2
+            plt.quiver(*ns.center[[0,4]], *b[[0, 4]], angles='xy', scale_units='xy', scale=1, color=colors[i], linewidth=0.5)
+        
+        plot_stars_points([ns])
+        return ns
+        # return gen_starset(all_verts, stars[0]) # doesn't matter which star set we choose, only the predicate is being looked at and all star sets in a sequence should have the same predicate
+        # there's a possibility that the above will fail if the predicate is bad, in that case, just return StarSet(np.zeros(...), np.eye(...), *new_pred(stars[0].n))
 
     def print(self) -> None:
         print(f'Center: {self.center}\n__________\nBasis: {self.basis}\n__________\nC: {self.C}\n__________\ng: {self.g}')
@@ -645,12 +660,18 @@ class StarSet:
         hs = HalfspaceIntersection(halfspaces, pcc)
         return hs.intersections 
     
+    '''
+    Return the vertices of the star set
+    '''
     def get_verts_opt(self) -> np.ndarray:
         pred_verts = self.pred_verts()
         verts = (self.basis.T @ pred_verts.T).T + self.center # the first operation multiplies each basis by V, then add the center to each vertex
         return np.unique(verts, axis=0)
         # return verts
 
+    '''
+    Specifically return the vertices of the star set as a pair of lists containing the dim1 values of the vertices in the first list and dim2 values in the second
+    '''
     def get_verts(self, dim1: int = 0, dim2: int = 1) -> Tuple[List, List]:
         def order_verts_clockwise(verts: np.ndarray) -> np.ndarray:
             # points = np.array(verts)
@@ -662,7 +683,7 @@ class StarSet:
         verts = self.get_verts_opt()
         verts_2D = verts[:,[dim1, dim2]]
         if len(verts_2D)>self.n:
-            verts_2D = verts_2D[ConvexHull(verts_2D).vertices]
+            verts_2D = verts_2D[ConvexHull(verts_2D, qhull_options='QJ').vertices]
         verts_2D = order_verts_clockwise(verts_2D)
         v_dim1 = list(verts_2D[:,0])
         v_dim2 = list(verts_2D[:,1])
@@ -671,7 +692,13 @@ class StarSet:
         v_dim2.append(v_dim2[0])
         return (v_dim1, v_dim2)
 
-
+    '''
+    Return the H-polytope representation of StarSet given by arrays A, b for Aa<=b
+    '''
+    def h_polytope(self) -> Tuple[np.ndarray, np.ndarray]:
+        polytope = pc.qhull(self.get_verts_opt())
+        return (polytope.A, polytope.B)
+    
 class HalfSpace:
     '''
     Parameters
@@ -710,12 +737,12 @@ def sample_star(star: StarSet, N: int = 100, tol: float = 0.2) -> List[List[floa
             misses+=1
             if misses>int(N*tol):
                 # center, basis, C, g = star.center, star.basis, star.C, star.g
-                points.append(point)
+                # points.append(point)
                 # star.print()
                 # print(rect)
                 # print(np.maximum(C@np.linalg.inv(basis+1e-6*np.eye(star.dimension()))@(point-center)-g, 0))
-                # print("Warning: could potentially be sampling outside starset")
-                # raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
+                print("Warning: could potentially be sampling outside starset")
+                raise Exception("Too many consecutive misses, halting function. Call smple_rect instead.")
     return points
 
 # def post_cont_pca(old_star: StarSet, new_center: np.ndarray, derived_basis: np.ndarray,  points: np.ndarray) -> StarSet:
@@ -768,8 +795,8 @@ def post_cont_pca(old_star: StarSet, derived_basis: np.ndarray,  points: np.ndar
         #     # print("Solution not found with current predicate, trying a generic predicate instead.")
         #     return post_cont_pca(new_pred(old_star.n), derived_basis, points, True)
         old_star.print()
-        print(derived_basis)
-        print(np.var(points, axis=0))
+        print('Rank of basis: ', np.linalg.matrix_rank(derived_basis))
+        print('Rank of points: ',np.linalg.matrix_rank(points))
         raise RuntimeError(f'Optimizer was unable to find a valid mu') # this is also hit if the function is interrupted
 
     # print(model[u].as_decimal(3))
@@ -904,7 +931,7 @@ Visualization functions
 
 def plot_stars_points(stars: List[StarSet], points: np.ndarray = None):
     for star in stars:
-        x, y = np.array(star.get_verts())
+        x, y = np.array(star.get_verts(0,4))
         plt.plot(x, y, lw = 1)
         # centerx, centery = star.get_center_pt(0, 1)
         # plt.plot(centerx, centery, 'o')
