@@ -11,6 +11,7 @@ from verse.sensor.base_sensor_stars import *
 import time
 from verse.utils.star_diams import *
 from scipy.spatial import HalfspaceIntersection
+import hopsy
 
 class AgentMode(Enum):
     Default = auto()

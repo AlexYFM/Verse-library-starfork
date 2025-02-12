@@ -25,6 +25,7 @@ import pandas as pd
 from tqdm import tqdm
 import os
 import hashlib
+import hopsy
 
 class StarSet:
     """
@@ -634,7 +635,7 @@ class StarSet:
 
     def print(self) -> None:
         print(f'Center: {self.center}\n__________\nBasis: {self.basis}\n__________\nC: {self.C}\n__________\ng: {self.g}')
-
+    
     def sample(self, num_samples: int=100)->List[List[float]]:
         return sample_star(self, num_samples)
     
@@ -697,8 +698,21 @@ class StarSet:
     '''
     def h_polytope(self) -> Tuple[np.ndarray, np.ndarray]:
         polytope = pc.qhull(self.get_verts_opt())
-        return (polytope.A, polytope.B)
-    
+        return (polytope.A, polytope.b)
+
+    '''
+    '''
+    def sample_h(self, num_samples: int = 100): 
+        A, b = self.h_polytope()
+        problem = hopsy.Problem(A, b)
+        chain = hopsy.MarkovChain(problem, starting_point=[1.4, 2.3])
+        rng = hopsy.RandomNumberGenerator(seed=42)
+        _, samples = hopsy.sample(chain, rng, n_samples=1000, thinning=10)
+        return samples
+
+    def hello():
+        return 'hello'
+
 class HalfSpace:
     '''
     Parameters
