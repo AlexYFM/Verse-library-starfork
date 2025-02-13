@@ -128,5 +128,6 @@ def sim(vec, t):
     return vec
 
 star = StarSet(center, basis, C, g)
+print(star.sample_h())
 point = np.array([2, 4.00001])
 print(containment_poly(star, point))

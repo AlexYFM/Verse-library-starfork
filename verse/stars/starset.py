@@ -693,25 +693,37 @@ class StarSet:
         v_dim2.append(v_dim2[0])
         return (v_dim1, v_dim2)
 
-    '''
-    Return the H-polytope representation of StarSet given by arrays A, b for Aa<=b
-    '''
-    def h_polytope(self) -> Tuple[np.ndarray, np.ndarray]:
-        polytope = pc.qhull(self.get_verts_opt())
-        return (polytope.A, polytope.b)
 
-    '''
-    '''
-    def sample_h(self, num_samples: int = 100): 
-        A, b = self.h_polytope()
-        problem = hopsy.Problem(A, b)
-        chain = hopsy.MarkovChain(problem, starting_point=[1.4, 2.3])
-        rng = hopsy.RandomNumberGenerator(seed=42)
-        _, samples = hopsy.sample(chain, rng, n_samples=1000, thinning=10)
+
+    def sample_h(self, num_samples=100, burn_in=None, thinning=10) -> np.ndarray:
+        V = self.get_verts_opt() # get vertices
+        V0 = V[0]  # Choose an arbitrary reference point
+        V_shifted = V - V0  # Shift vertices so that one vertex is at the origin
+
+        U, S, Vt = np.linalg.svd(V_shifted, full_matrices=False)
+        rank = np.sum(S > 1e-8)  # Determine the intrinsic dimensionality
+        basis = Vt[:rank].T  # Use first 'rank' right singular vectors as basis
+
+        if rank == 0:
+            return np.tile(V0, (num_samples, 1)) # just return the sole vertex if the star set is 0D
+
+        V_proj = (V_shifted @ basis) # Express in lower-dimensional space if necessary
+        P_proj = pc.qhull(V_proj)  # Compute H-rep of projected star set 
+        A_proj, b_proj = P_proj.A, P_proj.b  
+
+        problem = hopsy.Problem(A_proj, b_proj)
+        chain = hopsy.MarkovChain(problem, starting_point=np.mean(V_proj, axis=0))
+        rng = hopsy.RandomNumberGenerator()
+        
+        burn_in = 10*num_samples if burn_in is None else burn_in
+        _ = hopsy.sample(chain, rng, n_samples=burn_in, thinning=thinning)
+        _, samples_proj = hopsy.sample(chain, rng, n_samples=num_samples, thinning=thinning)
+
+        # Step 6: Map samples back to original space
+        samples = samples_proj.squeeze(0) @ basis.T + V0
+
         return samples
 
-    def hello():
-        return 'hello'
 
 class HalfSpace:
     '''
@@ -727,6 +739,7 @@ class HalfSpace:
 ### from star_util
 
 
+# change this to check if point in convex hull of vertices 
 def containment_poly(star: StarSet, point: np.ndarray) -> bool:
     if star.dimension() != point.shape[0]:
         raise ValueError(f'Dimension of point does not match the dimenions of the starset')
@@ -874,7 +887,8 @@ def gen_starset(points: np.ndarray, old_star: StarSet) -> StarSet:
 ### doing post_computations using simulation then constructing star sets around each set of points afterwards -- not iterative
 ### modified N from 100 to 30 for helicopter scenario
 def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 100, mode_label: int = None, lane_map: LaneMap = None) -> List[StarSet]:
-    points = np.array(sample_star(old_star, N))
+    # points = np.array(sample_star(old_star, N))
+    points = np.array(old_star.sample_h(N))
     post_points = []
 
     for point in points:
@@ -887,8 +901,8 @@ def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: fl
     for t in tqdm(range(post_points.shape[1]), desc="Training Progress"):
         stars.append(gen_starset(post_points[:, t, 1:], old_star)) 
         # stars.append(gen_starset_grad(post_points[:, t, 1:], old_star)) ### testing out new algorithm here, could also do so in startests if I remember 
-    # for t in range(post_points.shape[1]):
-    #     plt.scatter(post_points[:, t, 1], post_points[:, t, 2])
+    for t in range(post_points.shape[1]):
+        plt.scatter(post_points[:, t, 0], post_points[:, t, 1])
         
     return stars
 

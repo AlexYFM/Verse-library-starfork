@@ -3,7 +3,9 @@ from verse import Scenario, ScenarioConfig
 from verse.analysis.verifier import ReachabilityMethod
 from verse.plotter.plotter2D import *
 
+
 from verse.stars.starset import *
+import verse.stars.starset
 import plotly.graph_objects as go
 from enum import Enum, auto
 
@@ -16,7 +18,7 @@ import hopsy
 class AgentMode(Enum):
     Default = auto()
 
-def plot_stars(stars: List[StarSet], dim1: int = None, dim2: int = None):
+def plot_stars(stars: List[StarSet], dim1: int = 0, dim2: int = 1):
     for star in stars:
         x, y = np.array(star.get_verts(dim1, dim2))
         plt.plot(x, y, lw = 1)
@@ -72,8 +74,14 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     # scenario.config.overwrite = True
 
-    initial = StarSet(center, basis, C, g)
-
+    # initial = StarSet(center, basis, C, g)
+    # initial = StarSet(center, np.zeros((2,2)), C, g)
+    initial = StarSet(center, np.array([[1,1], [2,2]]), C, g)
+    samples = initial.sample_h(num_samples=100)
+    plt.scatter(samples[:,0], samples[:,1])
+    print(samples)
+    plot_stars([initial])
+    exit()
     start = time.time()
     traces = scenario.verify(7, 0.1)
     end = time.time()

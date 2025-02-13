@@ -60,6 +60,13 @@ if __name__ == "__main__":
         initial_mode=tuple([CraftMode.ProxA])
     )
     initial = StarSet(center, basis, C, g)
+    samples = initial.sample_h(num_samples=1000)
+    
+    plt.scatter(samples[:,0], samples[:,1])
+    plt.show()
+
+    # print(samples)
+    exit()
     scenario.add_agent(car)
     # scenario.set_init(
     #     [
@@ -70,7 +77,7 @@ if __name__ == "__main__":
     #     ],
     # )
     
-    scenario.config.overwrite = False
+    scenario.config.overwrite = True
     start = time.time()
     traces = scenario.verify(200, 1)
     end = time.time()
