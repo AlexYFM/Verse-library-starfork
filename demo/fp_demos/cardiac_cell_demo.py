@@ -48,10 +48,6 @@ if __name__ == "__main__":
     # scenario.config.pca = False
     scenario.set_sensor(BaseStarSensor())
     scenario.config.model_path = 'cardiac_demo'
-    scenario.config.model_hparams = {
-        "big_initial_set": (np.array([-0.2,-0.2]), np.array([0.2,0.2])),
-        "initial_set_size": 1,
-    }
     
     trace = scenario.verify(5, 0.1)
     # sim = scenario.simulate(10, 0.01)

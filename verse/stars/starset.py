@@ -168,8 +168,8 @@ class StarSet:
     '''
     TO-DO: see if I can toggle which alg to use (DryVR, mine) based on some parameter, see if a new scenarioconfig can be added without much fuss
     '''
-    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,nn_enable,model_path,model_hparams
-                        , agent_id: str, overwrite: bool):
+    def calc_reach_tube(self, mode_label,time_horizon,time_step,sim_func,bloating_method,kvalue,sim_trace_num,lane_map,nn_enable,model_path, 
+                        agent_id: str, overwrite: bool):
         #get rectangle
         # self.print()
         # print(f'Current agent: {agent_id}, mode: {mode_label}')
@@ -714,17 +714,18 @@ class StarSet:
         A_proj, b_proj = P_proj.A, P_proj.b  
 
         problem = hopsy.Problem(A_proj, b_proj)
-        try:
-            chain = hopsy.MarkovChain(problem, starting_point=np.mean(V_proj-(1e-12), axis=0))
-        except Exception as e:
-            print(f'Error: {e}')
+        # starting_point = project_onto_polytope(A_proj, b_proj, V_proj[0])        
+        # if np.any(A_proj @ starting_point > b_proj):
+        #     print(A_proj@starting_point-b_proj)
+        #     print("Warning: starting_point is not inside the polytope!")
+        chain = hopsy.MarkovChain(problem, starting_point=np.mean(V_proj, axis=0))
         rng = hopsy.RandomNumberGenerator()
         
         burn_in = 10*num_samples if burn_in is None else burn_in
         _ = hopsy.sample(chain, rng, n_samples=burn_in, thinning=thinning)
         _, samples_proj = hopsy.sample(chain, rng, n_samples=num_samples, thinning=thinning)
 
-        # Step 6: Map samples back to original space
+        # Map samples back to original space
         samples = samples_proj.squeeze(0) @ basis.T + V0
 
         return samples
@@ -921,21 +922,6 @@ def gen_starsets_post_sim(old_star: StarSet, sim: Callable, T: float = 7, ts: fl
         
     return stars
 
-### doing sim and post_cont iteratively to construct new starsets and get new points from them every ts
-### this takes a decent amount of time -- guessing coming from post_cont_pca and/or sample_star as sim should be pretty fast
-### sample star may be taking a while
-### also size of star set blows up quickly, check what's going on -- probably need a better/different plotter function now
-def sim_star(init_star: StarSet, sim: Callable, T: int = 7, ts: float = 0.05, N: int = 100) -> List[StarSet]:
-    t = 0
-    stars: List[StarSet] = []
-    old_star = init_star
-    while t<T:
-        new_star = gen_starsets_post_sim(old_star, sim, ts, ts, N, True)[0] # gen_starset should return a list including only one starset
-        stars.append(new_star)
-        t += ts
-        old_star = copy.deepcopy(new_star)
-    return stars
-
 '''
 Utility function to see if there's anything wrong with the post_cont_pca alg
 '''
@@ -967,108 +953,3 @@ def check_unsat(old_star: StarSet, derived_basis: np.ndarray, point: np.ndarray,
     if o.check() == unsat:
         print(o.sexpr())
     return o.check() == unsat
-
-'''
-Visualization functions
-'''
-
-def plot_stars_points(stars: List[StarSet], points: np.ndarray = None):
-    for star in stars:
-        x, y = np.array(star.get_verts(0,4))
-        plt.plot(x, y, lw = 1)
-        # centerx, centery = star.get_center_pt(0, 1)
-        # plt.plot(centerx, centery, 'o')
-    if points is not None:
-        plt.scatter(points[:, 0], points[:, 1])
-    # plt.show()
-
-def gen_starsets_post_sim_vis(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 100, no_init: bool = False) -> List[StarSet]:
-    points = np.array(sample_star(old_star, N, tol=10)) ### sho
-    post_points = []
-    if no_init: 
-        for point in points:
-            post_points.append(sim(mode=None, initialCondition=point, time_bound=T, time_step=ts).tolist()[1:])
-    else:
-        for point in points:
-            post_points.append(sim(mode=None, initialCondition=point, time_bound=T, time_step=ts).tolist())
-    post_points = np.array(post_points)
-    stars: List[StarSet] = []
-    for t in range(post_points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
-        stars.append(gen_starset(post_points[:, t, 1:], old_star))
-    # print(post_points)
-    plot_stars_points(stars, post_points[:, 0, 1:]) # this only makes sense if points is 2D, i.e., only simulated one ts
-    return stars
-
-def plot_stars_points_nonit(stars: List[StarSet], points: np.ndarray):
-    for star in stars:
-        x, y = np.array(star.get_verts())
-        plt.plot(x, y, lw = 1)
-        # centerx, centery = star.get_center_pt(0, 1)
-        # plt.plot(centerx, centery, 'o')
-    for t in range(points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
-        plt.scatter(points[:, t, 1], points[:, t, 2])
-    # plt.show()
-
-def gen_starsets_post_sim_vis_nonit(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 100, no_init: bool = False) -> None:
-    points = np.array(sample_star(old_star, N, tol=10)) ### sho
-    post_points = []
-    if no_init: 
-        for point in points:
-            post_points.append(sim(mode=None, initialCondition=point, time_bound=T, time_step=ts).tolist()[1:])
-    else:
-        for point in points:
-            post_points.append(sim(mode=None, initialCondition=point, time_bound=T, time_step=ts).tolist())
-    post_points = np.array(post_points)
-    stars: List[StarSet] = []
-    for t in range(post_points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
-        stars.append(gen_starset(post_points[:, t, 1:], old_star))
-        # print(np.inner(*stars[-1].basis), '\n ----------- \n', *stars[-1].basis)
-    # print(post_points)
-    plot_stars_points_nonit(stars, post_points) # this only makes sense if points is 2D, i.e., only simulated one ts
-    plt.show()
-
-def plot_stars_points_nonit_nd(stars: List[StarSet], points: np.ndarray, dim1, dim2):
-    for star in stars:
-        x, y = np.array(star.get_verts(dim1, dim2))
-        plt.plot(x, y, lw = 1)
-        # plt.plot(x, y, 'b', lw = 1)
-        centerx, centery = star.get_center_pt(dim1, dim2)
-        plt.plot(centerx, centery, 'o')
-    for t in range(points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
-        plt.scatter(points[:, t, dim1+1], points[:, t, dim2+1])
-    # plt.show()
-
-def gen_starsets_post_sim_vis_nonit_nd(old_star: StarSet, sim: Callable, T: float = 7, ts: float = 0.05, N: int = 100, no_init: bool = False, dim1=0, dim2=1) -> None:
-    points = np.array(sample_star(old_star, N, tol=10)) ### sho
-    post_points = []
-    if no_init: 
-        for point in points:
-            post_points.append(sim(mode=None, initialCondition=point, time_bound=T, time_step=ts).tolist()[1:])
-    else:
-        for point in points:
-            post_points.append(sim(mode=None, initialCondition=point, time_bound=T, time_step=ts).tolist())
-    post_points = np.array(post_points)
-    stars: List[StarSet] = []
-    for t in range(post_points.shape[1]): # pp has shape N x (T/dt) x (n + 1), so index using first 
-        stars.append(gen_starset(post_points[:, t, 1:], old_star))
-        # print(np.inner(*stars[-1].basis), '\n ----------- \n', *stars[-1].basis)
-    # print(post_points)
-    if dim1>=old_star.dimension():
-        dim1 = 0
-    if dim2>old_star.dimension():
-        dim2 = 1
-    # plot_stars_points_nonit_nd(stars, post_points, dim1, dim2) # this only makes sense if points is 2D, i.e., only simulated one ts
-    plt.show()
-
-def sim_star_vis(init_star: StarSet, sim: Callable, T: int = 7, ts: float = 0.05, N: int = 100) -> None:
-    t = 0
-    stars: List[StarSet] = []
-    old_star = init_star
-    while t<T:
-        new_star = gen_starsets_post_sim_vis(old_star, sim, ts, ts, N, True)[0] # gen_starset should return a list including only one starset
-        stars.append(new_star)
-        ### print out each star set, check for orthogonality
-        t += ts
-        old_star = copy.deepcopy(new_star)
-    plt.show()
-    # return stars

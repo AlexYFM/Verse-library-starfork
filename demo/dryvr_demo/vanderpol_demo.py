@@ -32,18 +32,6 @@ if __name__ == "__main__":
     scenario = Scenario(ScenarioConfig(parallel=False))
     scenario.config.model_path = 'vdp_svd_bench'
 
-    scenario.config.model_hparams = {
-        "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
-        "initial_set_size": 1,
-        "lamb": 7,
-        "num_epochs": 30,
-        "gamma":0.99,
-        "lr":1e-4,
-        "sublin_loss":True,
-        # "num_samples": 100,
-        # "Ns": 1
-    }
-
     car = vanderpol_agent("car1", file_name=input_code_name)
     # car = vanderpol_agent('car2', file_name=input_code_name)
     # scenario.add_agent(car)

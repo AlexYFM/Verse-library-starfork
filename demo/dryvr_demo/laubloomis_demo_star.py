@@ -30,10 +30,6 @@ if __name__ == "__main__":
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     scenario.config.model_path = 'laubloomis'
     X = 2*W
-    scenario.config.model_hparams = {
-        "big_initial_set": (np.array([1.2-X, 1.05-X, 1.5-X, 2.4-X, 1-X, 0.1-X, 0.45-X]), np.array([1.2+X, 1.05+X, 1.5+X, 2.4+X, 1+X, 0.1+X, 0.45+X])),
-        "initial_set_size": 1,
-    }
     # scenario.config.pca = False
     basis = np.eye(7)*np.diag([W for _ in range(7)])
     center = np.array([1.2,1.05,1.5,2.4,1,0.1,0.45])

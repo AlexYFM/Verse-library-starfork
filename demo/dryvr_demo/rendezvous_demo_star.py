@@ -32,18 +32,6 @@ if __name__ == "__main__":
     # modify mode list input
     scenario.config.model_path = 'spacecraft_svd_bench_large_new'
 
-    scenario.config.model_hparams = {
-        "big_initial_set": (np.array([0,-0.5,0,0,0,0]), np.array([15,0.5,0,0,0,0])), # irrelevant for now
-        "initial_set_size": 1,
-        "lamb": 7,
-        "num_epochs": 30,
-        "gamma":0.99,
-        "lr":1e-4,
-        "sublin_loss":True,
-        # "num_samples": 100,
-        # "Ns": 1
-    }
-
     infin = np.array([-925, -425, 0, 0, 0, 0])
     sup = np.array([-875, -375, 0, 0, 0, 0])
 

@@ -40,10 +40,6 @@ if __name__ == "__main__":
     scenario.add_agent(car)
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     scenario.config.model_path = 'thermo_demo'
-    scenario.config.model_hparams = {
-        "big_initial_set": (np.array([75.5,0,0]), np.array([78.5,0,0])),
-        "initial_set_size": 0.1,
-    }
     # scenario.config.pca = False
     scenario.set_sensor(BaseStarSensor())
 

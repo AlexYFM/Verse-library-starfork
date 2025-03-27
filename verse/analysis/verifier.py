@@ -143,7 +143,6 @@ class Verifier:
         lane_map=None,
         nn_enable=True,
         model_path:str=None,
-        model_hparams:Dict=None,
         overwrite:bool=False,
     ):
         #this should return a list of stars for one time step along the horizon
@@ -167,42 +166,17 @@ class Verifier:
             tube_length = 0
         else:
             tube_length = res_tube.shape[0]
-        #What is this and why does the same star set appear twice?    
-        print(missing_seg_idx_list)
+        # print(missing_seg_idx_list)
 
+        #TODO: check this works for missing_seg_idx_list>1 and res_tube = None
+        reachtubes: List[List] = []
         for combine_seg_idx in missing_seg_idx_list:
             rect_seg = initial_set[combine_seg_idx : combine_seg_idx + combine_seg_length]
-            # print("len of rect_sec:")
-            # print(len(rect_seg))
-            #combined_rect = None
-            #for rect in rect_seg:
-            #    rect = np.array(rect)
-            #    if combined_rect is None:
-            #        combined_rect = rect
-            #    else:
-            #        combined_rect[0, :] = np.minimum(combined_rect[0, :], rect[0, :])
-            #        combined_rect[1, :] = np.maximum(combined_rect[1, :], rect[1, :])
             from verse.stars.starset import StarSet
-            combined_star = initial_set[0]
+            combined_star = rect_seg[0] 
             if len(rect_seg) > 1:
                 combined_star = StarSet.combine_stars(rect_seg)
-            #print(combined_rect)
-            #print("done with combined rec")
-        
-        #TODO: what to do with the list of initial set? Some sort of combining?
 
-        #fix this!
-        #print("TODO: is the initial set correct?")
-        #print(initial_set)
-        #breakpoint()
-        #KB HERE: combine the stars into a rectangle
-            #print(initial_set)
-            #inital_star = initial_set[0]
-
-            ### add a parameter here, either bool or create an enum
-            #To use Alex's version, change to "calc_reach_tube", and uncomment bloating method, kvalue, sim_trace_num
-            #To use Katherine's version, change to "calc_reach_tube_linear", and comment bloating method, kvalue, sim_trace_num
-            # reach_tube = combined_star.calc_reach_tube_linear(
             '''
             Pass in agent_id as a parameter to specify which model to use, should also consider which agent
             '''
@@ -217,34 +191,25 @@ class Verifier:
             lane_map=lane_map,
             nn_enable=nn_enable,
             model_path=model_path,
-            model_hparams=model_hparams,
             agent_id=agent_id,
             overwrite=overwrite
             )
 
            
             if incremental:
-                cache_tube_updates.append((agent_id, mode_label, combined_rect, cur_bloated_tube))
-                #EXISTING CODE, NOT SURE WHAT TO DO:
-            old_code = False
-            if old_code:
-                if res_tube is None:
-                    res_tube = cur_bloated_tube
-                    tube_length = cur_bloated_tube.shape[0]
-                else:
-                    if not tube_length <= 2 * combine_seg_idx:
-                        
-                        cur_bloated_tube = cur_bloated_tube[: tube_length - combine_seg_idx * 2, :]
-                        # Handle Lower Bound
-                        res_tube[combine_seg_idx * 2 :: 2, 1:] = np.minimum(
-                            res_tube[combine_seg_idx * 2 :: 2, 1:], cur_bloated_tube[::2, 1:]
-                        )
-                        # Handle Upper Bound
-                        res_tube[combine_seg_idx * 2 + 1 :: 2, 1:] = np.maximum(
-                            res_tube[combine_seg_idx * 2 + 1 :: 2, 1:], cur_bloated_tube[1::2, 1:]
-                        )
+                cache_tube_updates.append((agent_id, mode_label, combined_star, reach_tube))
+            reachtubes.append(reach_tube)
+
+        if len(reachtubes)==1:
+            return reachtubes[0], cache_tube_updates
         
-        return reach_tube, cache_tube_updates
+        res_tube = None # for now, don't worry about the case when res_tube is not None
+        for t in range(len(reachtubes[0])): # for each star set at each time
+            stars: List = [reachtubes[i][t][1] for i in range(len(reachtubes))] # assuming reachtubes[i][t] is a [int, StarSet] object
+            res_tube.append([reachtubes[0][t][0], StarSet.combine_stars(stars)])
+        
+        return res_tube, cache_tube_updates
+        # return reach_tube, cache_tube_updates
 
     def check_cache_bloated_tube(
         self,
@@ -460,7 +425,6 @@ class Verifier:
                         lane_map=consts.lane_map,
                         nn_enable=config.nn_enable,
                         model_path=config.model_path,
-                        model_hparams=config.model_hparams,
                         overwrite=config.overwrite
                     )
                     if config.incremental:
