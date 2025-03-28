@@ -30,7 +30,7 @@ if __name__ == "__main__":
     scenario.set_sensor(BaseStarSensor())
     scenario.config.reachability_method = ReachabilityMethod.STAR_SETS
     # modify mode list input
-    scenario.config.model_path = 'spacecraft_svd_bench_large_new'
+    scenario.config.model_path = 'combine_test'
 
     infin = np.array([-925, -425, 0, 0, 0, 0])
     sup = np.array([-875, -375, 0, 0, 0, 0])
@@ -48,13 +48,9 @@ if __name__ == "__main__":
         initial_mode=tuple([CraftMode.ProxA])
     )
     initial = StarSet(center, basis, C, g)
-    samples = initial.sample_h(num_samples=1000)
-    
-    plt.scatter(samples[:,0], samples[:,1])
-    plt.show()
 
     # print(samples)
-    exit()
+    # exit()
     scenario.add_agent(car)
     # scenario.set_init(
     #     [
@@ -65,15 +61,15 @@ if __name__ == "__main__":
     #     ],
     # )
     
-    scenario.config.overwrite = True
+    scenario.config.overwrite = False
     start = time.time()
     traces = scenario.verify(200, 1)
     end = time.time()
     print(f'Time: {end-start}')
     diams = time_step_diameter(traces, 200, 1)
     print(f'Initial diameter: {diams[0]}\n Final: {diams[-1]}\n Average: {sum(diams)/len(diams)}')
-    plot_reachtube_stars(traces, x_dim=0, y_dim=1, filter=1)
-    # plot_stars_time(traces, 4)
+    # plot_reachtube_stars(traces, x_dim=0, y_dim=1, filter=1)
+    plot_stars_time(traces, 3)
     # plot_stars_time(traces, 5, scenario_agent=car)
     # fig = go.Figure()
     # fig = reachtube_tree(traces, None, fig, 1, 2, [1, 2], "lines", "trace")

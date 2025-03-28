@@ -593,44 +593,44 @@ class StarSet:
         if m==1:
             return stars[0]
 
-        new_rect = []
-        n = stars[0].n
-        for i in range(n):
-            max = None
-            min = None
-            for star in stars:
-                this_min, this_max = star.get_max_min(i)
-                if min == None or this_min < min:
-                    min = this_min
-                if max == None or this_max > max:
-                    max = this_max
-            new_rect.append([min, max])
+        # new_rect = []
+        # n = stars[0].n
+        # for i in range(n):
+        #     max = None
+        #     min = None
+        #     for star in stars:
+        #         this_min, this_max = star.get_max_min(i)
+        #         if min == None or this_min < min:
+        #             min = this_min
+        #         if max == None or this_max > max:
+        #             max = this_max
+        #     new_rect.append([min, max])
 
-        new_rect = np.array(new_rect).T
-        basis = []
-        for i in range(n):
-            diff = new_rect[1]-new_rect[0] #max - min
-            center = (new_rect[1]+new_rect[0])/2
-            basis = np.eye(n)*np.diag(diff/2)
-            C, g = new_pred(n) 
+        # new_rect = np.array(new_rect).T
+        # basis = []
+        # for i in range(n):
+        #     diff = new_rect[1]-new_rect[0] #max - min
+        #     center = (new_rect[1]+new_rect[0])/2
+        #     basis = np.eye(n)*np.diag(diff/2)
+        #     C, g = new_pred(n) 
 
-        return StarSet(center, basis, C, g)
+        # return StarSet(center, basis, C, g)
 
-        # all_verts = []
-        # for star in stars:
-        #     all_verts.append(star.get_verts_opt()) 
-        # all_verts = np.vstack(all_verts)
-        # all_verts = all_verts[ConvexHull(all_verts, qhull_options='QJ').vertices]
+        all_verts = []
+        for star in stars:
+            all_verts.append(star.get_verts_opt()) 
+        all_verts = np.vstack(all_verts)
+        all_verts = all_verts[ConvexHull(all_verts, qhull_options='QJ').vertices]
         # plt.scatter(all_verts[:,0], all_verts[:,4])
-        # ns = gen_starset(all_verts, stars[0]) # doesn't matter which star set we choose, only the predicate is being looked at and all star sets in a sequence should have the same predicate
-        # colors = ['r','b']
+        ns = gen_starset(all_verts, stars[0]) # doesn't matter which star set we choose, only the predicate is being looked at and all star sets in a sequence should have the same predicate
+        colors = ['r','b']
         # i = 0
         # for b in ns.basis:
         #     i = (i+1)%2
         #     plt.quiver(*ns.center[[0,4]], *b[[0, 4]], angles='xy', scale_units='xy', scale=1, color=colors[i], linewidth=0.5)
         
         # plot_stars_points([ns])
-        # return ns
+        return ns
         # return gen_starset(all_verts, stars[0]) # doesn't matter which star set we choose, only the predicate is being looked at and all star sets in a sequence should have the same predicate
         # there's a possibility that the above will fail if the predicate is bad, in that case, just return StarSet(np.zeros(...), np.eye(...), *new_pred(stars[0].n))
 
@@ -710,14 +710,20 @@ class StarSet:
 
         # V_proj = (V_shifted @ basis) # Express in lower-dimensional space if necessary
         V_proj = (V_shifted @ basis) # need to catch small numerical errors
-        P_proj = pc.qhull(V_proj)  # Compute H-rep of projected star set 
-        A_proj, b_proj = P_proj.A, P_proj.b  
+        hull = ConvexHull(V_proj)
+
+        # P_proj = pc.qhull(V_proj)  # Compute H-rep of projected star set 
+        # A_proj, b_proj = P_proj.A, P_proj.b  
+        A_proj = hull.equations[:, :-1]  
+        b_proj = -hull.equations[:, -1] 
 
         problem = hopsy.Problem(A_proj, b_proj)
-        # starting_point = project_onto_polytope(A_proj, b_proj, V_proj[0])        
+        # starting_point = np.mean(V_proj, axis=0)       
         # if np.any(A_proj @ starting_point > b_proj):
         #     print(A_proj@starting_point-b_proj)
         #     print("Warning: starting_point is not inside the polytope!")
+
+        # make sure starting_point actually in A_proj, b_proj
         chain = hopsy.MarkovChain(problem, starting_point=np.mean(V_proj, axis=0))
         rng = hopsy.RandomNumberGenerator()
         
@@ -953,3 +959,12 @@ def check_unsat(old_star: StarSet, derived_basis: np.ndarray, point: np.ndarray,
     if o.check() == unsat:
         print(o.sexpr())
     return o.check() == unsat
+
+def plot_stars_points(stars: List[StarSet], points: np.ndarray = None):
+    for star in stars:
+        x, y = np.array(star.get_verts(0,4))
+        plt.plot(x, y, lw = 1)
+        # centerx, centery = star.get_center_pt(0, 1)
+        # plt.plot(centerx, centery, 'o')
+    if points is not None:
+        plt.scatter(points[:, 0], points[:, 1])
